@@ -126,9 +126,6 @@ public class VideoChatActivity extends ListActivity {
         localVideoSource = pcFactory.createVideoSource(capturer, this.pnRTCClient.videoConstraints());
         VideoTrack localVideoTrack = pcFactory.createVideoTrack(VIDEO_TRACK_ID, localVideoSource);
 
-        // First we create an AudioSource then we can create our AudioTrack
-        AudioSource audioSource = pcFactory.createAudioSource(this.pnRTCClient.audioConstraints());
-        AudioTrack localAudioTrack = pcFactory.createAudioTrack(AUDIO_TRACK_ID, audioSource);
 
         // To create our VideoRenderer, we can use the included VideoRendererGui for simplicity
         // First we need to set the GLSurfaceView that it should render to
@@ -146,9 +143,6 @@ public class VideoChatActivity extends ListActivity {
         //  Note that LOCAL_MEDIA_STREAM_ID can be any string
         MediaStream mediaStream = pcFactory.createLocalMediaStream(LOCAL_MEDIA_STREAM_ID);
 
-        // Now we can add our tracks.
-        mediaStream.addTrack(localVideoTrack);
-        mediaStream.addTrack(localAudioTrack);
 
         // First attach the RTC Listener so that callback events will be triggered
         this.pnRTCClient.attachRTCListener(new DemoRTCListener());
