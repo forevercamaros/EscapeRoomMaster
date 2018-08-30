@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,6 +18,11 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.pubnub.api.Callback;
+import com.pubnub.api.Pubnub;
+import com.pubnub.api.PubnubError;
+import com.pubnub.api.PubnubException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -66,26 +72,24 @@ public class VideoChatActivity extends ListActivity {
     private ChatAdapter mChatAdapter;
     private TextView mCallStatus;
 
+
     private String username;
     private boolean backPressed = false;
     private Thread  backPressedThread = null;
+
+    private String stdByChannel;
+    private Pubnub mPubNub;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat);
+
+        this.username     = "ESCAPE_ROOM_MASTER";
+        this.stdByChannel = this.username + Constants.STDBY_SUFFIX;
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        Bundle extras = getIntent().getExtras();
-        if (extras == null || !extras.containsKey(Constants.USER_NAME)) {
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
-            Toast.makeText(this, "Need to pass username to VideoChatActivity in intent extras (Constants.USER_NAME).",
-                    Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-        this.username      = extras.getString(Constants.USER_NAME, "");
         this.mChatList     = getListView();
         this.mChatEditText = (EditText) findViewById(R.id.chat_input);
         this.mCallStatus   = (TextView) findViewById(R.id.call_status);
@@ -157,11 +161,95 @@ public class VideoChatActivity extends ListActivity {
         this.pnRTCClient.listenOn("Kevin");
         this.pnRTCClient.setMaxConnections(1);
 
-        // If the intent contains a number to dial, call it now that you are connected.
-        //  Else, remain listening for a call.
-        if (extras.containsKey(Constants.CALL_USER)) {
-            String callUser = extras.getString(Constants.CALL_USER, "");
-            connectToUser(callUser);
+        initPubNub();
+
+        dispatchCall("ESCAPE_ROOM");
+
+    }
+
+    public void initPubNub(){
+        this.mPubNub  = new Pubnub(Constants.PUB_KEY, Constants.SUB_KEY);
+        this.mPubNub.setUUID(this.username);
+        subscribeStdBy();
+    }
+
+    private void subscribeStdBy(){
+        try {
+            this.mPubNub.subscribe(this.stdByChannel, new Callback() {
+                @Override
+                public void successCallback(String channel, Object message) {
+                    Log.d("MA-iPN", "MESSAGE: " + message.toString());
+                    if (!(message instanceof JSONObject)) return; // Ignore if not JSONObject
+                    JSONObject jsonMsg = (JSONObject) message;
+                    if (!jsonMsg.has(Constants.JSON_CALL_USER)) return;
+                }
+
+                @Override
+                public void connectCallback(String channel, Object message) {
+                    Log.d("MA-iPN", "CONNECTED: " + message.toString());
+                    setUserStatus(Constants.STATUS_AVAILABLE);
+                }
+
+                @Override
+                public void errorCallback(String channel, PubnubError error) {
+                    Log.d("MA-iPN","ERROR: " + error.toString());
+                }
+            });
+        } catch (PubnubException e){
+            Log.d("HERE","HEREEEE");
+            e.printStackTrace();
+        }
+    }
+
+    public void dispatchCall(final String callNum){
+        final String callNumStdBy = callNum + Constants.STDBY_SUFFIX;
+        this.mPubNub.hereNow(callNumStdBy, new Callback() {
+            @Override
+            public void successCallback(String channel, Object message) {
+                Log.d("MA-dC", "HERE_NOW: " +" CH - " + callNumStdBy + " " + message.toString());
+                try {
+                    int occupancy = ((JSONObject) message).getInt(Constants.JSON_OCCUPANCY);
+                    if (occupancy == 0) {
+                        showToast("User is not online!");
+                        return;
+                    }
+                    JSONObject jsonCall = new JSONObject();
+                    jsonCall.put(Constants.JSON_CALL_USER, username);
+                    jsonCall.put(Constants.JSON_CALL_TIME, System.currentTimeMillis());
+                    mPubNub.publish(callNumStdBy, jsonCall, new Callback() {
+                        @Override
+                        public void successCallback(String channel, Object message) {
+                            Log.d("MA-dC", "SUCCESS: " + message.toString());
+                            connectToUser(callNum);
+                        }
+                    });
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+    private void showToast(final String message){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(VideoChatActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void setUserStatus(String status){
+        try {
+            JSONObject state = new JSONObject();
+            state.put(Constants.JSON_STATUS, status);
+            this.mPubNub.setState(this.stdByChannel, this.username, state, new Callback() {
+                @Override
+                public void successCallback(String channel, Object message) {
+                    Log.d("MA-sUS","State Set: " + message.toString());
+                }
+            });
+        } catch (JSONException e){
+            e.printStackTrace();
         }
     }
 
