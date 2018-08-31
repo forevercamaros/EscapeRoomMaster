@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
@@ -57,7 +58,7 @@ import me.kevingleason.pnwebrtc.PnSignalingParams;
  * This chat will begin/subscribe to a video chat.
  * REQUIRED: The intent must contain a
  */
-public class VideoChatActivity extends ListActivity {
+public class VideoChatActivity extends Activity {
     public static final String VIDEO_TRACK_ID = "videoPN";
     public static final String AUDIO_TRACK_ID = "audioPN";
     public static final String LOCAL_MEDIA_STREAM_ID = "localStreamPN";
@@ -68,9 +69,8 @@ public class VideoChatActivity extends ListActivity {
     private VideoRenderer.Callbacks remoteRender;
     private GLSurfaceView videoView;
     private EditText mChatEditText;
-    private ListView mChatList;
-    private ChatAdapter mChatAdapter;
     private TextView mCallStatus;
+    private CountDownTimer countDownTimer;
 
 
     private String username;
@@ -90,14 +90,39 @@ public class VideoChatActivity extends ListActivity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        this.mChatList     = getListView();
         this.mChatEditText = (EditText) findViewById(R.id.chat_input);
         this.mCallStatus   = (TextView) findViewById(R.id.call_status);
 
-        // Set up the List View for chatting
-        List<ChatMessage> ll = new LinkedList<ChatMessage>();
-        mChatAdapter = new ChatAdapter(this, ll);
-        mChatList.setAdapter(mChatAdapter);
+        mCallStatus.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!mCallStatus.getText().equals("Connecting...")){
+                    if (countDownTimer != null){
+                        countDownTimer.cancel();
+                    }
+                    countDownTimer = new CountDownTimer(30000, 1000) {
+
+                        public void onTick(long millisUntilFinished) {
+                            int seconds = (int) (millisUntilFinished / 1000) % 60;
+                            int minutes =  ((int)(millisUntilFinished / 1000) / 60) % 60;
+                            int hours = (int)(millisUntilFinished / 1000) / 3600;
+                            String time = String.format("%02d", hours) + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+                            mCallStatus.setText("Restart Timer: " + time);
+                            ChatMessage chatMsg = new ChatMessage(username, time, System.currentTimeMillis());
+                            sendMessage(chatMsg,"time");
+                        }
+
+                        public void onFinish() {
+                            mCallStatus.setText("Restart Timer: " + "00:00:00");
+                            ChatMessage chatMsg = new ChatMessage(username, "Now You DIE!!!!", System.currentTimeMillis());
+                            sendMessage(chatMsg,"time");
+                            chatMsg = new ChatMessage(username, "turn off Family Room Lamp", System.currentTimeMillis());
+                            sendMessage(chatMsg,"assistant_command");
+                        }
+                    }.start();
+                }
+            }
+        });
 
         // First, we initiate the PeerConnectionFactory with our application context and some options.
         PeerConnectionFactory.initializeAndroidGlobals(
@@ -286,6 +311,8 @@ public class VideoChatActivity extends ListActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        this.pnRTCClient.closeAllConnections();
+        endCall();
         if (this.localVideoSource != null) {
             this.localVideoSource.stop();
         }
@@ -346,16 +373,7 @@ public class VideoChatActivity extends ListActivity {
         String message = mChatEditText.getText().toString();
         if (message.equals("")) return; // Return if empty
         ChatMessage chatMsg = new ChatMessage(this.username, message, System.currentTimeMillis());
-        mChatAdapter.addMessage(chatMsg);
-        JSONObject messageJSON = new JSONObject();
-        try {
-            messageJSON.put(Constants.JSON_MSG_UUID, chatMsg.getSender());
-            messageJSON.put(Constants.JSON_MSG, chatMsg.getMessage());
-            messageJSON.put(Constants.JSON_TIME, chatMsg.getTimeStamp());
-            this.pnRTCClient.transmitAll(messageJSON);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        sendMessage(chatMsg,"hint");
         // Hide keyboard when you send a message.
         View focusView = this.getCurrentFocus();
         if (focusView != null) {
@@ -363,6 +381,29 @@ public class VideoChatActivity extends ListActivity {
             inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         }
         mChatEditText.setText("");
+    }
+
+    private void  sendMessage(ChatMessage chatMsg, String type){
+        JSONObject messageJSON = new JSONObject();
+        try {
+            switch (type){
+                case "time":
+                    messageJSON.put(Constants.JSON_MSG_UUID, "time");
+                    break;
+                case "assistant_command":
+                    messageJSON.put(Constants.JSON_MSG_UUID, "assistant_command");
+                    break;
+                default:
+                    messageJSON.put(Constants.JSON_MSG_UUID, chatMsg.getSender());
+                    break;
+            }
+
+            messageJSON.put(Constants.JSON_MSG, chatMsg.getMessage());
+            messageJSON.put(Constants.JSON_TIME, chatMsg.getTimeStamp());
+            this.pnRTCClient.transmitAll(messageJSON);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -391,7 +432,7 @@ public class VideoChatActivity extends ListActivity {
                     Toast.makeText(VideoChatActivity.this,"Connected to " + peer.getId(), Toast.LENGTH_SHORT).show();
                     try {
                         if(remoteStream.audioTracks.size()==0 || remoteStream.videoTracks.size()==0) return;
-                        mCallStatus.setVisibility(View.GONE);
+                        mCallStatus.setText("Start Timer");
                         remoteStream.videoTracks.get(0).addRenderer(new VideoRenderer(remoteRender));
                         VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
                         VideoRendererGui.update(localRender, 72, 65, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, true);
@@ -411,12 +452,6 @@ public class VideoChatActivity extends ListActivity {
                 String msg  = jsonMsg.getString(Constants.JSON_MSG);
                 long   time = jsonMsg.getLong(Constants.JSON_TIME);
                 final ChatMessage chatMsg = new ChatMessage(uuid, msg, time);
-                VideoChatActivity.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mChatAdapter.addMessage(chatMsg);
-                    }
-                });
             } catch (JSONException e){
                 e.printStackTrace();
             }
