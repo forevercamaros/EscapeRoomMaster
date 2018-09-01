@@ -6,4 +6,5 @@
     <color name="white">#FFF</color>
     <color name="green">#ff1ce322</color>
     <color name="grey">#eee</color>
+    <color name="reset_room">#64ff0000</color>
 </resources>

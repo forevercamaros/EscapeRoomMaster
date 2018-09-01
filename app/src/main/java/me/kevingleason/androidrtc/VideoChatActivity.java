@@ -1,5 +1,6 @@
 package me.kevingleason.androidrtc;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.ListActivity;
 import android.content.Context;
@@ -16,9 +17,12 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
@@ -182,9 +186,33 @@ public class VideoChatActivity extends Activity {
 
         initPubNub();
 
-        dispatchCall("ESCAPE_ROOM");
-
     }
+
+    public void resetRoom(View view){
+        if (countDownTimer != null){
+            countDownTimer.cancel();
+        }
+        ChatMessage chatMsg = new ChatMessage(this.username, "ARE YOU READY?", System.currentTimeMillis());
+        sendMessage(chatMsg,"time");
+        chatMsg = new ChatMessage(this.username, "turn on family room lamp", System.currentTimeMillis());
+        sendMessage(chatMsg,"assistant_command");
+        mCallStatus.setText("Start Timer");
+    }
+
+    public void toggle(View view) {
+        RelativeLayout control_box = (RelativeLayout)findViewById(R.id.control_box);
+        if (mVisible) {
+            mVisible = false;
+            control_box.animate().alpha(0.0f).setDuration(1000).start();
+            control_box.setVisibility(View.GONE);
+        } else {
+            mVisible = true;
+            control_box.animate().alpha(1.0f).setDuration(1000).start();
+            control_box.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private boolean mVisible = true;
 
     public void initPubNub(){
         this.mPubNub  = new Pubnub(Constants.PUB_KEY, Constants.SUB_KEY);
@@ -304,22 +332,12 @@ public class VideoChatActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        dispatchCall("ESCAPE_ROOM");
         this.videoView.onResume();
         this.localVideoSource.restart();
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        this.pnRTCClient.closeAllConnections();
-        endCall();
-        if (this.localVideoSource != null) {
-            this.localVideoSource.stop();
-        }
-        if (this.pnRTCClient != null) {
-            this.pnRTCClient.onDestroy();
-        }
-    }
+
 
     @Override
     public void onBackPressed() {
@@ -359,15 +377,22 @@ public class VideoChatActivity extends Activity {
         this.pnRTCClient.connect(user);
     }
 
-    public void hangup(View view) {
-        this.pnRTCClient.closeAllConnections();
-        endCall();
-    }
-
     private void endCall() {
         finish();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        this.pnRTCClient.closeAllConnections();
+        endCall();
+        if (this.localVideoSource != null) {
+            this.localVideoSource.stop();
+        }
+        if (this.pnRTCClient != null) {
+            this.pnRTCClient.onDestroy();
+        }
+    }
 
     public void sendMessage(View view) {
         String message = mChatEditText.getText().toString();
@@ -422,6 +447,10 @@ public class VideoChatActivity extends Activity {
                 }
             });
         }
+
+
+
+
 
         @Override
         public void onAddRemoteStream(final MediaStream remoteStream, final PnPeer peer) {
