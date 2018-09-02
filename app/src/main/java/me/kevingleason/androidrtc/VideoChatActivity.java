@@ -92,7 +92,20 @@ public class VideoChatActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat);
 
-
+        TextView reset_room = (TextView)findViewById(R.id.reset_room);
+        reset_room.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (countDownTimer != null){
+                    countDownTimer.cancel();
+                }
+                ChatMessage chatMsg = new ChatMessage(username, "ARE YOU READY?", System.currentTimeMillis());
+                sendMessage(chatMsg,"time");
+                chatMsg = new ChatMessage(username, "turn on family room lamp", System.currentTimeMillis());
+                sendMessage(chatMsg,"assistant_command");
+                mCallStatus.setText("Start Timer");
+            }
+        });
 
         this.username     = "ESCAPE_ROOM_MASTER";
         this.stdByChannel = this.username + Constants.STDBY_SUFFIX;
@@ -200,16 +213,6 @@ public class VideoChatActivity extends Activity {
 
     }
 
-    public void resetRoom(View view){
-        if (countDownTimer != null){
-            countDownTimer.cancel();
-        }
-        ChatMessage chatMsg = new ChatMessage(this.username, "ARE YOU READY?", System.currentTimeMillis());
-        sendMessage(chatMsg,"time");
-        chatMsg = new ChatMessage(this.username, "turn on family room lamp", System.currentTimeMillis());
-        sendMessage(chatMsg,"assistant_command");
-        mCallStatus.setText("Start Timer");
-    }
 
     public void toggle(View view) {
         final RelativeLayout control_box = (RelativeLayout)findViewById(R.id.control_box);
