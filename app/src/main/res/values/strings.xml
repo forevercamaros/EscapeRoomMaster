@@ -11,7 +11,7 @@
         <item>You look like 100 miles of bad road</item>
     </string-array>
 
-    <string name="app_name">AndroidRTC</string>
+    <string name="app_name">Escape Room Master</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_video_chat">Video Call</string>
