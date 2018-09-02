@@ -31,7 +31,7 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/round_button_send"
                 android:src="@drawable/ic_action_send_now"
-                android:onClick="sendMessage" />
+                android:onClick="sendMessage2" />
 
         </RelativeLayout>
     </LinearLayout>
