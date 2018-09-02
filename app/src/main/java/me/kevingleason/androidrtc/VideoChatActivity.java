@@ -215,18 +215,18 @@ public class VideoChatActivity extends Activity {
 
 
     public void toggle(View view) {
-        final RelativeLayout control_box = (RelativeLayout)findViewById(R.id.control_box);
+        final LinearLayout call_chat_box = (LinearLayout)findViewById(R.id.call_chat_box);
         final LinearLayout preset_hint_box = (LinearLayout)findViewById(R.id.preset_hint_box);
         if (mVisible){
             mVisible=false;
-            control_box.animate().alpha(0.0f).setDuration(1000).start();
-            control_box.setVisibility(View.GONE);
+            call_chat_box.animate().alpha(0.0f).setDuration(1000).start();
+            call_chat_box.setVisibility(View.GONE);
             preset_hint_box.animate().alpha(0.0f).setDuration(1000).start();
             preset_hint_box.setVisibility(View.GONE);
         }else {
             mVisible=true;
-            control_box.animate().alpha(1.0f).setDuration(1000).start();
-            control_box.setVisibility(View.VISIBLE);
+            call_chat_box.animate().alpha(1.0f).setDuration(1000).start();
+            call_chat_box.setVisibility(View.VISIBLE);
             preset_hint_box.animate().alpha(1.0f).setDuration(1000).start();
             preset_hint_box.setVisibility(View.VISIBLE);
         }
@@ -513,11 +513,11 @@ public class VideoChatActivity extends Activity {
                 @Override
                 public void run() {
                     mCallStatus.setText("Call Ended...");
-                    mCallStatus.setVisibility(View.VISIBLE);
+                    videoView.onPause();
+                    localVideoSource.stop();
                 }
             });
             try {Thread.sleep(1500);} catch (InterruptedException e){e.printStackTrace();}
-            finish();
         }
     }
 }

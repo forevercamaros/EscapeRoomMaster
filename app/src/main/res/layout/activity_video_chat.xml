@@ -12,15 +12,16 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:padding="10dp"
         android:id="@+id/preset_hint_box">
         <Spinner
             android:id="@+id/hintSpinner"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight=".5"></Spinner>
+            android:layout_weight="4"></Spinner>
         <RelativeLayout
             android:layout_width="0dp"
-            android:layout_weight=".5"
+            android:layout_weight="1"
             android:layout_height="match_parent">
 
             <ImageButton
