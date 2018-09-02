@@ -1,6 +1,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context="me.kevingleason.androidrtc.VideoChatActivity">
 
     <android.opengl.GLSurfaceView
@@ -8,13 +9,39 @@
         android:layout_height="match_parent"
         android:layout_width="match_parent"
         android:onClick="toggle"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/preset_hint_box">
+        <Spinner
+            android:id="@+id/hintSpinner"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight=".5"></Spinner>
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_weight=".5"
+            android:layout_height="match_parent">
+
+            <ImageButton
+                android:layout_centerHorizontal="true"
+                android:contentDescription="Send"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/round_button_send"
+                android:src="@drawable/ic_action_send_now"
+                android:onClick="sendMessage" />
+
+        </RelativeLayout>
+    </LinearLayout>
 
     <RelativeLayout
         android:id="@+id/control_box"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_alignParentBottom="true">
+        android:layout_alignParentBottom="true"
+        android:fitsSystemWindows="true">
         <LinearLayout
             android:id="@+id/call_chat_box"
             android:layout_width="match_parent"

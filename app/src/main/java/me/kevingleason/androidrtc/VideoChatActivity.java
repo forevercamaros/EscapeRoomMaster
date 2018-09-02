@@ -16,10 +16,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
@@ -89,12 +92,21 @@ public class VideoChatActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat);
 
+
+
         this.username     = "ESCAPE_ROOM_MASTER";
         this.stdByChannel = this.username + Constants.STDBY_SUFFIX;
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         this.mChatEditText = (EditText) findViewById(R.id.chat_input);
+
+        String[] hints = getResources().getStringArray(R.array.hints_array);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.spinner_item, hints);
+
+        Spinner hintSpinner = (Spinner)findViewById(R.id.hintSpinner);
+        hintSpinner.setAdapter(adapter);
+
         this.mCallStatus   = (TextView) findViewById(R.id.call_status);
 
         mCallStatus.setOnClickListener(new View.OnClickListener() {
@@ -200,15 +212,20 @@ public class VideoChatActivity extends Activity {
     }
 
     public void toggle(View view) {
-        RelativeLayout control_box = (RelativeLayout)findViewById(R.id.control_box);
-        if (mVisible) {
-            mVisible = false;
+        final RelativeLayout control_box = (RelativeLayout)findViewById(R.id.control_box);
+        final LinearLayout preset_hint_box = (LinearLayout)findViewById(R.id.preset_hint_box);
+        if (mVisible){
+            mVisible=false;
             control_box.animate().alpha(0.0f).setDuration(1000).start();
             control_box.setVisibility(View.GONE);
-        } else {
-            mVisible = true;
+            preset_hint_box.animate().alpha(0.0f).setDuration(1000).start();
+            preset_hint_box.setVisibility(View.GONE);
+        }else {
+            mVisible=true;
             control_box.animate().alpha(1.0f).setDuration(1000).start();
             control_box.setVisibility(View.VISIBLE);
+            preset_hint_box.animate().alpha(1.0f).setDuration(1000).start();
+            preset_hint_box.setVisibility(View.VISIBLE);
         }
     }
 
