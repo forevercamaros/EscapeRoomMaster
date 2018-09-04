@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
@@ -77,7 +76,9 @@ public class VideoChatActivity extends Activity {
     private GLSurfaceView videoView;
     private EditText mChatEditText;
     private TextView mCallStatus;
-    private CountDownTimer countDownTimer;
+    private CountDownTimerPausable countDownTimer;
+
+    private boolean countdownPaused = false;
 
 
     private String username;
@@ -129,7 +130,7 @@ public class VideoChatActivity extends Activity {
                     if (countDownTimer != null){
                         countDownTimer.cancel();
                     }
-                    countDownTimer = new CountDownTimer(30000, 1000) {
+                    countDownTimer = new CountDownTimerPausable(30000, 1000) {
 
                         public void onTick(long millisUntilFinished) {
                             int seconds = (int) (millisUntilFinished / 1000) % 60;
@@ -211,6 +212,22 @@ public class VideoChatActivity extends Activity {
 
         initPubNub();
 
+    }
+
+    public void pause_countdown(View view){
+        if (countDownTimer != null){
+            TextView btnPause = (TextView)findViewById(R.id.pause_countdown);
+            if (countdownPaused){
+                countdownPaused=false;
+                countDownTimer.start();
+                btnPause.setText("Pause Countdown");
+
+            }else{
+                countdownPaused=true;
+                countDownTimer.pause();
+                btnPause.setText("unPause Countdown");
+            }
+        }
     }
 
 
