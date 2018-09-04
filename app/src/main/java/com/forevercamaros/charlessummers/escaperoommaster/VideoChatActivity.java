@@ -126,7 +126,10 @@ public class VideoChatActivity extends Activity {
         mCallStatus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!mCallStatus.getText().equals("Connecting...")){
+                if (mCallStatus.getText().equals("Connect")){
+                    mCallStatus.setText("Connecting...");
+                    dispatchCall("ESCAPE_ROOM");
+                }else if (!mCallStatus.getText().equals("Connecting...")){
                     if (countDownTimer != null){
                         countDownTimer.cancel();
                     }
@@ -369,7 +372,6 @@ public class VideoChatActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        dispatchCall("ESCAPE_ROOM");
         this.videoView.onResume();
         this.localVideoSource.restart();
     }
