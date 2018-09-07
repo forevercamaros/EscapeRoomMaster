@@ -293,6 +293,7 @@ public class VideoChatActivity extends Activity {
         this.mPubNub.hereNow(callNumStdBy, new Callback() {
             @Override
             public void successCallback(String channel, Object message) {
+                try{Thread.sleep(1000);}catch (Exception e){};
                 Log.d("MA-dC", "HERE_NOW: " +" CH - " + callNumStdBy + " " + message.toString());
                 try {
                     int occupancy = ((JSONObject) message).getInt(Constants.JSON_OCCUPANCY);
@@ -306,6 +307,7 @@ public class VideoChatActivity extends Activity {
                     mPubNub.publish(callNumStdBy, jsonCall, new Callback() {
                         @Override
                         public void successCallback(String channel, Object message) {
+                            try{Thread.sleep(1000);}catch (Exception e){};
                             Log.d("MA-dC", "SUCCESS: " + message.toString());
                             connectToUser(callNum);
                         }

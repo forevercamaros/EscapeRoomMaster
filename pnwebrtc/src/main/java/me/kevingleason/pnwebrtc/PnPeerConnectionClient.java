@@ -333,6 +333,7 @@ public class PnPeerConnectionClient {
 
         @Override
         public void successCallback(String channel, Object message) {
+            try{Thread.sleep(1000);}catch (Exception e){};
             if (!(message instanceof JSONObject)) return; // Ignore if not valid JSON.
             JSONObject jsonMessage = (JSONObject) message;
             mRtcListener.onDebug(new PnRTCMessage(jsonMessage));

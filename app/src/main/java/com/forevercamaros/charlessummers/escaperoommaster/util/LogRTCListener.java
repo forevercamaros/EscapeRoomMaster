@@ -29,6 +29,7 @@ public class LogRTCListener extends PnRTCListener {
 
     @Override
     public void onPeerConnectionClosed(PnPeer peer) {
+        try{Thread.sleep(1000);}catch (Exception e){};
         Log.i("RTCListener", "OnPeerConnectionClosed - " + peer.toString());
     }
 
@@ -54,6 +55,7 @@ public class LogRTCListener extends PnRTCListener {
 
     @Override
     public void onDebug(PnRTCMessage message) {
+        try{Thread.sleep(1000);}catch (Exception e){};
         Log.i("RTCListener", "OnDebug - " + message.getMessage());
     }
 }
