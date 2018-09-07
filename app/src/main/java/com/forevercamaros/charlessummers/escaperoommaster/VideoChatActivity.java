@@ -307,7 +307,7 @@ public class VideoChatActivity extends Activity {
                         return;
                     }
                     try{
-                        final Map<String, String> message = ImmutableMap.<String, String>of("sender", username, "message", "", "timestamp", DateTimeUtil.getTimeStampUtc());
+                        final Map<String, String> message = ImmutableMap.<String, String>of(Constants.JSON_CALL_USER, username, "message", "", "timestamp", DateTimeUtil.getTimeStampUtc());
                         mPubNub.publish().channel(callNumStdBy).message(message).async(new PNCallback<PNPublishResult>() {
                             @Override
                             public void onResponse(PNPublishResult result, PNStatus status) {
