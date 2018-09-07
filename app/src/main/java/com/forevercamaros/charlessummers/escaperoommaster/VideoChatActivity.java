@@ -26,10 +26,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
-import com.pubnub.api.Callback;
-import com.pubnub.api.Pubnub;
-import com.pubnub.api.PubnubError;
-import com.pubnub.api.PubnubException;
+import com.google.common.collect.ImmutableMap;
+import com.pubnub.api.PNConfiguration;
+import com.pubnub.api.PubNub;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,8 +46,10 @@ import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import com.forevercamaros.charlessummers.escaperoommaster.adapters.ChatAdapter;
@@ -56,6 +57,17 @@ import com.forevercamaros.charlessummers.escaperoommaster.adt.ChatMessage;
 import com.forevercamaros.charlessummers.escaperoommaster.servers.XirSysRequest;
 import com.forevercamaros.charlessummers.escaperoommaster.util.Constants;
 import com.forevercamaros.charlessummers.escaperoommaster.util.LogRTCListener;
+import com.pubnub.api.callbacks.PNCallback;
+import com.pubnub.api.callbacks.SubscribeCallback;
+import com.pubnub.api.models.consumer.PNPublishResult;
+import com.pubnub.api.models.consumer.PNStatus;
+import com.pubnub.api.models.consumer.presence.PNHereNowChannelData;
+import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData;
+import com.pubnub.api.models.consumer.presence.PNHereNowResult;
+import com.pubnub.api.models.consumer.presence.PNSetStateResult;
+import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
+import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
+
 import me.kevingleason.pnwebrtc.PnPeer;
 import me.kevingleason.pnwebrtc.PnRTCClient;
 import me.kevingleason.pnwebrtc.PnSignalingParams;
@@ -86,7 +98,7 @@ public class VideoChatActivity extends Activity {
     private Thread  backPressedThread = null;
 
     private String stdByChannel;
-    private Pubnub mPubNub;
+    private PubNub mPubNub;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -255,63 +267,62 @@ public class VideoChatActivity extends Activity {
     private boolean mVisible = true;
 
     public void initPubNub(){
-        this.mPubNub  = new Pubnub(Constants.PUB_KEY, Constants.SUB_KEY);
-        this.mPubNub.setUUID(this.username);
+        PNConfiguration config = new PNConfiguration()
+                .setPublishKey(Constants.PUB_KEY)
+                .setSubscribeKey(Constants.SUB_KEY)
+                .setUuid(this.username)
+                .setSecure(true);
+        this.mPubNub = new PubNub(config);
         subscribeStdBy();
     }
 
     private void subscribeStdBy(){
-        try {
-            this.mPubNub.subscribe(this.stdByChannel, new Callback() {
-                @Override
-                public void successCallback(String channel, Object message) {
-                    Log.d("MA-iPN", "MESSAGE: " + message.toString());
-                    if (!(message instanceof JSONObject)) return; // Ignore if not JSONObject
-                    JSONObject jsonMsg = (JSONObject) message;
-                    if (!jsonMsg.has(Constants.JSON_CALL_USER)) return;
-                }
+        mPubNub.addListener(new SubscribeCallback() {
+            @Override
+            public void status(PubNub pubnub, PNStatus status) {
 
-                @Override
-                public void connectCallback(String channel, Object message) {
-                    Log.d("MA-iPN", "CONNECTED: " + message.toString());
-                    setUserStatus(Constants.STATUS_AVAILABLE);
-                }
+            }
 
-                @Override
-                public void errorCallback(String channel, PubnubError error) {
-                    Log.d("MA-iPN","ERROR: " + error.toString());
-                }
-            });
-        } catch (PubnubException e){
-            Log.d("HERE","HEREEEE");
-            e.printStackTrace();
-        }
+            @Override
+            public void message(PubNub pubnub, PNMessageResult message) {
+
+            }
+
+            @Override
+            public void presence(PubNub pubnub, PNPresenceEventResult presence) {
+
+            }
+        });
+        mPubNub.subscribe().channels(Arrays.asList(stdByChannel)).withPresence().execute();
     }
 
     public void dispatchCall(final String callNum){
         final String callNumStdBy = callNum + Constants.STDBY_SUFFIX;
-        this.mPubNub.hereNow(callNumStdBy, new Callback() {
+        mPubNub.hereNow().channels(Arrays.asList(callNumStdBy)).async(new PNCallback<PNHereNowResult>() {
             @Override
-            public void successCallback(String channel, Object message) {
-                Log.d("MA-dC", "HERE_NOW: " +" CH - " + callNumStdBy + " " + message.toString());
-                try {
-                    int occupancy = ((JSONObject) message).getInt(Constants.JSON_OCCUPANCY);
-                    if (occupancy == 0) {
+            public void onResponse(PNHereNowResult result, PNStatus status) {
+                for (Map.Entry<String, PNHereNowChannelData> entry : result.getChannels().entrySet()) {
+                    if (entry.getValue().getOccupancy() == 0){
                         showToast("User is not online!");
                         return;
                     }
-                    JSONObject jsonCall = new JSONObject();
-                    jsonCall.put(Constants.JSON_CALL_USER, username);
-                    jsonCall.put(Constants.JSON_CALL_TIME, System.currentTimeMillis());
-                    mPubNub.publish(callNumStdBy, jsonCall, new Callback() {
-                        @Override
-                        public void successCallback(String channel, Object message) {
-                            Log.d("MA-dC", "SUCCESS: " + message.toString());
-                            connectToUser(callNum);
-                        }
-                    });
-                } catch (JSONException e) {
-                    e.printStackTrace();
+                    try{
+                        final Map<String, String> message = ImmutableMap.<String, String>of("sender", username, "message", "", "timestamp", DateTimeUtil.getTimeStampUtc());
+                        mPubNub.publish().channel(callNumStdBy).message(message).async(new PNCallback<PNPublishResult>() {
+                            @Override
+                            public void onResponse(PNPublishResult result, PNStatus status) {
+                                if (status.isError()){
+                                    status.getErrorData().getInformation();
+                                }else {
+                                    connectToUser(callNum);
+                                }
+
+                            }
+                        });
+                    }catch (Exception e){
+
+                    }
+
                 }
             }
         });
@@ -329,10 +340,10 @@ public class VideoChatActivity extends Activity {
         try {
             JSONObject state = new JSONObject();
             state.put(Constants.JSON_STATUS, status);
-            this.mPubNub.setState(this.stdByChannel, this.username, state, new Callback() {
+            mPubNub.setPresenceState().channels(Arrays.asList(stdByChannel)).state(state).async(new PNCallback<PNSetStateResult>() {
                 @Override
-                public void successCallback(String channel, Object message) {
-                    Log.d("MA-sUS","State Set: " + message.toString());
+                public void onResponse(PNSetStateResult result, PNStatus status) {
+
                 }
             });
         } catch (JSONException e){

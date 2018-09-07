@@ -27,7 +27,9 @@ repositories {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.pubnub:pubnub-android:3.7.4'
+    implementation group: 'com.pubnub', name: 'pubnub', version: '4.0.5'
     implementation 'io.pristine:libjingle:9694@aar'
     implementation project(':pnwebrtc')
+    implementation group: 'com.google.guava', name: 'guava', version: '19.0'
+    implementation group: 'joda-time', name: 'joda-time', version: '2.9.4'
 }
