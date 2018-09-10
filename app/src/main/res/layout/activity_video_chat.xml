@@ -111,7 +111,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight=".25"
-                android:onClick="pause_countdown"/>
+                android:onClick="pause_countdown"
+                android:visibility="gone"/>
             <TextView
                 android:id="@+id/reset_room"
                 android:text="Reset Room"
@@ -124,7 +125,8 @@
                 android:textColor="@color/white"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight=".25"/>
+                android:layout_weight=".25"
+                android:visibility="gone"/>
             <TextView
                 android:id="@+id/room_finished"
                 android:text="Room Completed"
@@ -138,7 +140,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight=".25"
-                android:onClick="pause_countdown"/>
+                android:onClick="pause_countdown"
+                android:visibility="gone"/>
         </LinearLayout>
 
     </RelativeLayout>

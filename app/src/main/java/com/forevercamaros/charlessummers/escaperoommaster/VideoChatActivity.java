@@ -95,13 +95,15 @@ public class VideoChatActivity extends Activity {
 
     private int countDownLength =600000;
 
+    private Context context;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat);
 
         TextView room_finished = (TextView)findViewById(R.id.room_finished);
-        final Context context=this;
+        context=this;
         room_finished.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -111,7 +113,6 @@ public class VideoChatActivity extends Activity {
                 dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        //TODO Room Completed Code
                         ChatMessage chatMsg = new ChatMessage(username, "NOOOOO!!!!!", System.currentTimeMillis());
                         sendMessage(chatMsg,"time");
                         chatMsg = new ChatMessage(username, "turn off family room lamp", System.currentTimeMillis());
@@ -132,19 +133,30 @@ public class VideoChatActivity extends Activity {
         reset_room.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (countDownTimer != null){
-                    countDownTimer.cancel();
-                }
-                TwoMinuteWarningSent=true;
-                ChatMessage chatMsg = new ChatMessage(username, "stop_music", System.currentTimeMillis());
-                sendMessage(chatMsg,"music");
-                chatMsg = new ChatMessage(username, "ARE YOU READY?", System.currentTimeMillis());
-                sendMessage(chatMsg,"time");
-                chatMsg = new ChatMessage(username, "turn on family room lamp", System.currentTimeMillis());
-                sendMessage(chatMsg,"assistant_command");
-                chatMsg = new ChatMessage(username,"turn off outlet",System.currentTimeMillis());
-                sendMessage(chatMsg,"assistant_command");
-                mCallStatus.setText("Start Timer");
+                AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
+                dlgAlert.setMessage("Are you sure that you qish to reset the room?");
+                dlgAlert.setTitle("Escape Room Master");
+                dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        if (countDownTimer != null){
+                            countDownTimer.cancel();
+                        }
+                        TwoMinuteWarningSent=true;
+                        ChatMessage chatMsg = new ChatMessage(username, "stop_music", System.currentTimeMillis());
+                        sendMessage(chatMsg,"music");
+                        chatMsg = new ChatMessage(username, "ARE YOU READY?", System.currentTimeMillis());
+                        sendMessage(chatMsg,"time");
+                        chatMsg = new ChatMessage(username, "turn on family room lamp", System.currentTimeMillis());
+                        sendMessage(chatMsg,"assistant_command");
+                        chatMsg = new ChatMessage(username,"turn off outlet",System.currentTimeMillis());
+                        sendMessage(chatMsg,"assistant_command");
+                        mCallStatus.setText("Start Timer");
+                    }
+                });
+                dlgAlert.setNegativeButton("No",null);
+                dlgAlert.setCancelable(true);
+                dlgAlert.create().show();
             }
         });
 
@@ -170,43 +182,54 @@ public class VideoChatActivity extends Activity {
                     mCallStatus.setText("Connecting...");
                     dispatchCall("ESCAPE_ROOM");
                 }else if (!mCallStatus.getText().equals("Connecting...")){
-                    if (countDownTimer != null){
-                        countDownTimer.cancel();
-                    }
-                    ChatMessage chatMsg = new ChatMessage(username,"background", System.currentTimeMillis());
-                    sendMessage(chatMsg,"music");
-                    TwoMinuteWarningSent=false;
-                    countDownTimer = new CountDownTimerPausable(countDownLength, 1000) {
-
-                        public void onTick(long millisUntilFinished) {
-                            if (millisUntilFinished<120000 && !TwoMinuteWarningSent){
-                                TwoMinuteWarningSent=true;
-                                ChatMessage chatMsg = new ChatMessage(username, "2min_warning", System.currentTimeMillis());
-                                sendMessage(chatMsg,"music");
+                    AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
+                    dlgAlert.setMessage("Are you sure that you wish to start the room?");
+                    dlgAlert.setTitle("Escape Room Master");
+                    dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            if (countDownTimer != null){
+                                countDownTimer.cancel();
                             }
-                            int seconds = (int) (millisUntilFinished / 1000) % 60;
-                            int minutes =  ((int)(millisUntilFinished / 1000) / 60) % 60;
-                            int hours = (int)(millisUntilFinished / 1000) / 3600;
-                            String time = String.format("%02d", hours) + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
-                            mCallStatus.setText("Restart Timer: " + time);
-                            ChatMessage chatMsg = new ChatMessage(username, time, System.currentTimeMillis());
-                            sendMessage(chatMsg,"time");
-                        }
+                            ChatMessage chatMsg = new ChatMessage(username,"background", System.currentTimeMillis());
+                            sendMessage(chatMsg,"music");
+                            TwoMinuteWarningSent=false;
+                            countDownTimer = new CountDownTimerPausable(countDownLength, 1000) {
 
-                        public void onFinish() {
-                            mCallStatus.setText("Restart Timer: " + "00:00:00");
-                            ChatMessage chatMsg = new ChatMessage(username, "Now You DIE!!!!", System.currentTimeMillis());
-                            sendMessage(chatMsg,"time");
-                            chatMsg = new ChatMessage(username, "turn off Family Room Lamp", System.currentTimeMillis());
-                            sendMessage(chatMsg,"assistant_command");
-                            try{
-                                Thread.sleep(500);
-                            }catch (Exception e){}
+                                public void onTick(long millisUntilFinished) {
+                                    if (millisUntilFinished<120000 && !TwoMinuteWarningSent){
+                                        TwoMinuteWarningSent=true;
+                                        ChatMessage chatMsg = new ChatMessage(username, "2min_warning", System.currentTimeMillis());
+                                        sendMessage(chatMsg,"music");
+                                    }
+                                    int seconds = (int) (millisUntilFinished / 1000) % 60;
+                                    int minutes =  ((int)(millisUntilFinished / 1000) / 60) % 60;
+                                    int hours = (int)(millisUntilFinished / 1000) / 3600;
+                                    String time = String.format("%02d", hours) + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+                                    mCallStatus.setText("Restart Timer: " + time);
+                                    ChatMessage chatMsg = new ChatMessage(username, time, System.currentTimeMillis());
+                                    sendMessage(chatMsg,"time");
+                                }
 
-                            chatMsg = new ChatMessage(username,"turn off outlet",System.currentTimeMillis());
-                            sendMessage(chatMsg,"assistant_command");
+                                public void onFinish() {
+                                    mCallStatus.setText("Restart Timer: " + "00:00:00");
+                                    ChatMessage chatMsg = new ChatMessage(username, "Now You DIE!!!!", System.currentTimeMillis());
+                                    sendMessage(chatMsg,"time");
+                                    chatMsg = new ChatMessage(username, "turn off Family Room Lamp", System.currentTimeMillis());
+                                    sendMessage(chatMsg,"assistant_command");
+                                    try{
+                                        Thread.sleep(500);
+                                    }catch (Exception e){}
+
+                                    chatMsg = new ChatMessage(username,"turn off outlet",System.currentTimeMillis());
+                                    sendMessage(chatMsg,"assistant_command");
+                                }
+                            }.start();
                         }
-                    }.start();
+                    });
+                    dlgAlert.setNegativeButton("No",null);
+                    dlgAlert.setCancelable(true);
+                    dlgAlert.create().show();
                 }
             }
         });
@@ -273,16 +296,38 @@ public class VideoChatActivity extends Activity {
 
     public void pause_countdown(View view){
         if (countDownTimer != null){
-            TextView btnPause = (TextView)findViewById(R.id.pause_countdown);
+            final TextView btnPause = (TextView)findViewById(R.id.pause_countdown);
             if (countdownPaused){
-                countdownPaused=false;
-                countDownTimer.start();
-                btnPause.setText("Pause Countdown");
+                AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
+                dlgAlert.setMessage("Are you sure that you wish to pause the countdown?");
+                dlgAlert.setTitle("Escape Room Master");
+                dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        countdownPaused=false;
+                        countDownTimer.start();
+                        btnPause.setText("Pause Countdown");
+                    }
+                });
+                dlgAlert.setNegativeButton("No",null);
+                dlgAlert.setCancelable(true);
+                dlgAlert.create().show();
 
             }else{
-                countdownPaused=true;
-                countDownTimer.pause();
-                btnPause.setText("unPause Countdown");
+                AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
+                dlgAlert.setMessage("Are you sure that you wish to unpause the countdown?");
+                dlgAlert.setTitle("Escape Room Master");
+                dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        countdownPaused=true;
+                        countDownTimer.pause();
+                        btnPause.setText("unPause Countdown");
+                    }
+                });
+                dlgAlert.setNegativeButton("No",null);
+                dlgAlert.setCancelable(true);
+                dlgAlert.create().show();
             }
         }
     }
@@ -568,6 +613,12 @@ public class VideoChatActivity extends Activity {
                     try {
                         if(remoteStream.audioTracks.size()==0 || remoteStream.videoTracks.size()==0) return;
                         mCallStatus.setText("Start Timer");
+                        TextView reset_room = (TextView)findViewById(R.id.reset_room);
+                        reset_room.setVisibility(View.VISIBLE);
+                        TextView room_finished = (TextView)findViewById(R.id.room_finished);
+                        room_finished.setVisibility(View.VISIBLE);
+                        TextView pause_countdown = (TextView)findViewById(R.id.pause_countdown);
+                        pause_countdown.setVisibility(View.VISIBLE);
                         remoteStream.videoTracks.get(0).addRenderer(new VideoRenderer(remoteRender));
                         VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
                         VideoRendererGui.update(localRender, 72, 65, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, true);
