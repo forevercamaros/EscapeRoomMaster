@@ -114,6 +114,7 @@ public class VideoChatActivity extends Activity {
                 dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        countDownTimer.cancel();
                         ChatMessage chatMsg = new ChatMessage(username, "NOOOOO!!!!!", System.currentTimeMillis());
                         sendMessage(chatMsg,"time");
                         chatMsg = new ChatMessage(username, "turn off family room lamp", System.currentTimeMillis());
@@ -475,8 +476,10 @@ public class VideoChatActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        this.videoView.onResume();
-        this.localVideoSource.restart();
+        if (localVideoSource != null){
+            this.videoView.onResume();
+            this.localVideoSource.restart();
+        }
     }
 
     @Override
