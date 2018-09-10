@@ -301,29 +301,34 @@ public class VideoChatActivity extends Activity {
         mPubNub.hereNow().channels(Arrays.asList(callNumStdBy)).async(new PNCallback<PNHereNowResult>() {
             @Override
             public void onResponse(PNHereNowResult result, PNStatus status) {
-                for (Map.Entry<String, PNHereNowChannelData> entry : result.getChannels().entrySet()) {
-                    if (entry.getValue().getOccupancy() == 0){
-                        showToast("User is not online!");
-                        return;
-                    }
-                    try{
-                        final Map<String, String> message = ImmutableMap.<String, String>of(Constants.JSON_CALL_USER, username, "message", "", "timestamp", DateTimeUtil.getTimeStampUtc());
-                        mPubNub.publish().channel(callNumStdBy).message(message).async(new PNCallback<PNPublishResult>() {
-                            @Override
-                            public void onResponse(PNPublishResult result, PNStatus status) {
-                                if (status.isError()){
-                                    status.getErrorData().getInformation();
-                                }else {
-                                    connectToUser(callNum);
+                if (status.isError()){
+                    status.getErrorData().getInformation();
+                }else {
+                    for (Map.Entry<String, PNHereNowChannelData> entry : result.getChannels().entrySet()) {
+                        if (entry.getValue().getOccupancy() == 0){
+                            showToast("User is not online!");
+                            return;
+                        }
+                        try{
+                            final Map<String, String> message = ImmutableMap.<String, String>of(Constants.JSON_CALL_USER, username, "message", "", "timestamp", DateTimeUtil.getTimeStampUtc());
+                            mPubNub.publish().channel(callNumStdBy).message(message).async(new PNCallback<PNPublishResult>() {
+                                @Override
+                                public void onResponse(PNPublishResult result, PNStatus status) {
+                                    if (status.isError()){
+                                        status.getErrorData().getInformation();
+                                    }else {
+                                        connectToUser(callNum);
+                                    }
+
                                 }
+                            });
+                        }catch (Exception e){
 
-                            }
-                        });
-                    }catch (Exception e){
+                        }
 
                     }
-
                 }
+
             }
         });
     }
