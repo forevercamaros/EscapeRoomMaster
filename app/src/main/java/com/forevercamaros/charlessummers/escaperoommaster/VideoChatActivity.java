@@ -2,13 +2,16 @@ package com.forevercamaros.charlessummers.escaperoommaster;
 
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -88,10 +91,42 @@ public class VideoChatActivity extends Activity {
     private String stdByChannel;
     private Pubnub mPubNub;
 
+    private boolean TwoMinuteWarningSent = false;
+
+    private int countDownLength =600000;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat);
+
+        TextView room_finished = (TextView)findViewById(R.id.room_finished);
+        final Context context=this;
+        room_finished.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
+                dlgAlert.setMessage("Are you sure that the room is complete?");
+                dlgAlert.setTitle("Escape Room Master");
+                dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        //TODO Room Completed Code
+                        ChatMessage chatMsg = new ChatMessage(username, "NOOOOO!!!!!", System.currentTimeMillis());
+                        sendMessage(chatMsg,"time");
+                        chatMsg = new ChatMessage(username, "turn off family room lamp", System.currentTimeMillis());
+                        sendMessage(chatMsg,"assistant_command");
+                        chatMsg = new ChatMessage(username,"turn on outlet",System.currentTimeMillis());
+                        sendMessage(chatMsg,"assistant_command");
+                        chatMsg = new ChatMessage(username,"turn on living room floor lamp",System.currentTimeMillis());
+                        sendMessage(chatMsg,"assistant_command");
+                    }
+                });
+                dlgAlert.setNegativeButton("No",null);
+                dlgAlert.setCancelable(true);
+                dlgAlert.create().show();
+            }
+        });
 
         TextView reset_room = (TextView)findViewById(R.id.reset_room);
         reset_room.setOnClickListener(new View.OnClickListener() {
@@ -100,9 +135,14 @@ public class VideoChatActivity extends Activity {
                 if (countDownTimer != null){
                     countDownTimer.cancel();
                 }
-                ChatMessage chatMsg = new ChatMessage(username, "ARE YOU READY?", System.currentTimeMillis());
+                TwoMinuteWarningSent=true;
+                ChatMessage chatMsg = new ChatMessage(username, "stop_music", System.currentTimeMillis());
+                sendMessage(chatMsg,"music");
+                chatMsg = new ChatMessage(username, "ARE YOU READY?", System.currentTimeMillis());
                 sendMessage(chatMsg,"time");
                 chatMsg = new ChatMessage(username, "turn on family room lamp", System.currentTimeMillis());
+                sendMessage(chatMsg,"assistant_command");
+                chatMsg = new ChatMessage(username,"turn off outlet",System.currentTimeMillis());
                 sendMessage(chatMsg,"assistant_command");
                 mCallStatus.setText("Start Timer");
             }
@@ -133,9 +173,17 @@ public class VideoChatActivity extends Activity {
                     if (countDownTimer != null){
                         countDownTimer.cancel();
                     }
-                    countDownTimer = new CountDownTimerPausable(30000, 1000) {
+                    ChatMessage chatMsg = new ChatMessage(username,"background", System.currentTimeMillis());
+                    sendMessage(chatMsg,"music");
+                    TwoMinuteWarningSent=false;
+                    countDownTimer = new CountDownTimerPausable(countDownLength, 1000) {
 
                         public void onTick(long millisUntilFinished) {
+                            if (millisUntilFinished<120000 && !TwoMinuteWarningSent){
+                                TwoMinuteWarningSent=true;
+                                ChatMessage chatMsg = new ChatMessage(username, "2min_warning", System.currentTimeMillis());
+                                sendMessage(chatMsg,"music");
+                            }
                             int seconds = (int) (millisUntilFinished / 1000) % 60;
                             int minutes =  ((int)(millisUntilFinished / 1000) / 60) % 60;
                             int hours = (int)(millisUntilFinished / 1000) / 3600;
@@ -150,6 +198,12 @@ public class VideoChatActivity extends Activity {
                             ChatMessage chatMsg = new ChatMessage(username, "Now You DIE!!!!", System.currentTimeMillis());
                             sendMessage(chatMsg,"time");
                             chatMsg = new ChatMessage(username, "turn off Family Room Lamp", System.currentTimeMillis());
+                            sendMessage(chatMsg,"assistant_command");
+                            try{
+                                Thread.sleep(500);
+                            }catch (Exception e){}
+
+                            chatMsg = new ChatMessage(username,"turn off outlet",System.currentTimeMillis());
                             sendMessage(chatMsg,"assistant_command");
                         }
                     }.start();
@@ -466,6 +520,9 @@ public class VideoChatActivity extends Activity {
                     break;
                 case "assistant_command":
                     messageJSON.put(Constants.JSON_MSG_UUID, "assistant_command");
+                    break;
+                case "music":
+                    messageJSON.put(Constants.JSON_MSG_UUID, "music");
                     break;
                 default:
                     messageJSON.put(Constants.JSON_MSG_UUID, chatMsg.getSender());

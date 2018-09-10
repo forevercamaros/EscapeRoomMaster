@@ -89,7 +89,7 @@
                 android:id="@+id/call_status"
                 android:text="Connect"
                 android:padding="10dp"
-                android:textSize="25sp"
+                android:textSize="15sp"
                 android:background="#64000000"
                 android:gravity="center"
                 android:textAlignment="center"
@@ -97,12 +97,12 @@
                 android:textColor="@color/white"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight=".33"/>
+                android:layout_weight=".25"/>
             <TextView
                 android:id="@+id/pause_countdown"
                 android:text="Pause Countdown"
                 android:padding="10dp"
-                android:textSize="25sp"
+                android:textSize="15sp"
                 android:background="@color/reset_room"
                 android:gravity="center"
                 android:textAlignment="center"
@@ -110,13 +110,13 @@
                 android:textColor="@color/white"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight=".33"
+                android:layout_weight=".25"
                 android:onClick="pause_countdown"/>
             <TextView
                 android:id="@+id/reset_room"
                 android:text="Reset Room"
                 android:padding="10dp"
-                android:textSize="25sp"
+                android:textSize="15sp"
                 android:background="#64000000"
                 android:gravity="center"
                 android:textAlignment="center"
@@ -124,8 +124,21 @@
                 android:textColor="@color/white"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight=".33"
-                />
+                android:layout_weight=".25"/>
+            <TextView
+                android:id="@+id/room_finished"
+                android:text="Room Completed"
+                android:padding="10dp"
+                android:textSize="15sp"
+                android:background="@color/reset_room"
+                android:gravity="center"
+                android:textAlignment="center"
+                android:layout_centerHorizontal="true"
+                android:textColor="@color/white"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".25"
+                android:onClick="pause_countdown"/>
         </LinearLayout>
 
     </RelativeLayout>
