@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -121,6 +122,7 @@ public class VideoChatActivity extends Activity {
                         sendMessage(chatMsg,"assistant_command");
                         chatMsg = new ChatMessage(username,"turn on living room floor lamp",System.currentTimeMillis());
                         sendMessage(chatMsg,"assistant_command");
+
                     }
                 });
                 dlgAlert.setNegativeButton("No",null);
@@ -477,8 +479,6 @@ public class VideoChatActivity extends Activity {
         this.localVideoSource.restart();
     }
 
-
-
     @Override
     public void onBackPressed() {
         if (!this.backPressed){
@@ -521,9 +521,10 @@ public class VideoChatActivity extends Activity {
         finish();
     }
 
+
     @Override
-    protected void onStop() {
-        super.onStop();
+    protected void onDestroy(){
+        super.onDestroy();
         this.pnRTCClient.closeAllConnections();
         endCall();
         if (this.localVideoSource != null) {
@@ -533,6 +534,7 @@ public class VideoChatActivity extends Activity {
             this.pnRTCClient.onDestroy();
         }
     }
+
 
     public void sendMessage(View view) {
         String message = mChatEditText.getText().toString();
