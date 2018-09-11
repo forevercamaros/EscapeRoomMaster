@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.google.common.collect.ImmutableMap;
 import com.pubnub.api.PubNub;
 import com.pubnub.api.callbacks.PNCallback;
 import com.pubnub.api.callbacks.SubscribeCallback;
@@ -355,17 +356,18 @@ public class PnPeerConnectionClient {
             mRtcListener.onDebug(new PnRTCMessage("Cannot transmit before calling Client.connect"));
         }
         try {
-            JSONObject message = new JSONObject();
-            message.put(PnRTCMessage.JSON_PACKET, packet);
-            message.put(PnRTCMessage.JSON_ID, ""); //Todo: session id, unused in js SDK?
-            message.put(PnRTCMessage.JSON_NUMBER, this.id);
+            final Map<String, String> message = ImmutableMap.<String, String>of(PnRTCMessage.JSON_PACKET, packet.toString(), PnRTCMessage.JSON_ID, "", PnRTCMessage.JSON_NUMBER, this.id);
+
+            Log.d("PnPeerConnectionClient", "transmitMessage: To: " + toID + " message: " + message.toString());
             mPubNub.publish().channel(toID).message(message).async(new PNCallback<PNPublishResult>() {
                 @Override
                 public void onResponse(PNPublishResult result, PNStatus status) {
-
+                    if (status.isError()){
+                        Log.e("PnPeerConnectionClient", "onResponse: " + status.getErrorData().getInformation());
+                    }
                 }
             });
-        } catch (JSONException e){
+        } catch (Exception e){
             e.printStackTrace();
         }
     }
