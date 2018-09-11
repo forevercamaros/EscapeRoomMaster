@@ -286,7 +286,7 @@ public class PnPeerConnectionClient {
 
             @Override
             public void presence(PubNub pubnub, PNPresenceEventResult presence) {
-
+                String uuid = presence.getUuid();
             }
         });
         mPubNub.subscribe().channels(Arrays.asList(channel)).withPresence().execute();
