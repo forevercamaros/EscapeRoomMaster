@@ -68,7 +68,7 @@ import me.kevingleason.pnwebrtc.PnSignalingParams;
  * This chat will begin/subscribe to a video chat.
  * REQUIRED: The intent must contain a
  */
-public class VideoChatActivity extends Activity {
+public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceView.ScaleChangeListener {
     public static final String VIDEO_TRACK_ID = "videoPN";
     public static final String AUDIO_TRACK_ID = "audioPN";
     public static final String LOCAL_MEDIA_STREAM_ID = "localStreamPN";
@@ -77,7 +77,7 @@ public class VideoChatActivity extends Activity {
     private VideoSource localVideoSource;
     private VideoRenderer.Callbacks localRender;
     private VideoRenderer.Callbacks remoteRender;
-    private GLSurfaceView videoView;
+    private PinchZoomGLSurfaceView videoView;
     private EditText mChatEditText;
     private TextView mCallStatus;
     private CountDownTimerPausable countDownTimer;
@@ -99,6 +99,12 @@ public class VideoChatActivity extends Activity {
     private Context context;
 
     @Override
+    public void onScaleChange(float scale) {
+        TextView txtScale = (TextView)findViewById(R.id.scale);
+        txtScale.setText((Float.toString(scale)));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat);
@@ -115,7 +121,7 @@ public class VideoChatActivity extends Activity {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         countDownTimer.cancel();
-                        ChatMessage chatMsg = new ChatMessage(username, "NOOOOO!!!!!", System.currentTimeMillis());
+                        ChatMessage chatMsg = new ChatMessage(username, "NOOO!!!\nYou Win!", System.currentTimeMillis());
                         sendMessage(chatMsg,"time");
                         chatMsg = new ChatMessage(username, "turn off family room lamp", System.currentTimeMillis());
                         sendMessage(chatMsg,"assistant_command");
@@ -123,6 +129,8 @@ public class VideoChatActivity extends Activity {
                         sendMessage(chatMsg,"assistant_command");
                         chatMsg = new ChatMessage(username,"turn on living room floor lamp",System.currentTimeMillis());
                         sendMessage(chatMsg,"assistant_command");
+                        chatMsg = new ChatMessage(username,"win",System.currentTimeMillis());
+                        sendMessage(chatMsg,"music");
 
                     }
                 });
@@ -137,7 +145,7 @@ public class VideoChatActivity extends Activity {
             @Override
             public void onClick(View view) {
                 AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
-                dlgAlert.setMessage("Are you sure that you qish to reset the room?");
+                dlgAlert.setMessage("Are you sure that you wish to reset the room?");
                 dlgAlert.setTitle("Escape Room Master");
                 dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
@@ -220,6 +228,8 @@ public class VideoChatActivity extends Activity {
                                     sendMessage(chatMsg,"time");
                                     chatMsg = new ChatMessage(username, "turn off Family Room Lamp", System.currentTimeMillis());
                                     sendMessage(chatMsg,"assistant_command");
+                                    chatMsg = new ChatMessage(username,"win",System.currentTimeMillis());
+                                    sendMessage(chatMsg,"music");
                                     try{
                                         Thread.sleep(500);
                                     }catch (Exception e){}
@@ -267,14 +277,15 @@ public class VideoChatActivity extends Activity {
 
         // To create our VideoRenderer, we can use the included VideoRendererGui for simplicity
         // First we need to set the GLSurfaceView that it should render to
-        this.videoView = (GLSurfaceView) findViewById(R.id.gl_surface);
+        this.videoView = (PinchZoomGLSurfaceView) findViewById(R.id.gl_surface);
 
+        videoView.addScaleChangeListener(this);
         // Then we set that view, and pass a Runnable to run once the surface is ready
         VideoRendererGui.setView(videoView, null);
 
         // Now that VideoRendererGui is ready, we can get our VideoRenderer.
         // IN THIS ORDER. Effects which is on top or bottom
-        remoteRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
+        remoteRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
         localRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, true);
 
         // We start out with an empty MediaStream object, created with help from our PeerConnectionFactory
@@ -294,6 +305,9 @@ public class VideoChatActivity extends Activity {
         this.pnRTCClient.setMaxConnections(1);
 
         initPubNub();
+
+        mCallStatus.setText("Connecting...");
+        dispatchCall("ESCAPE_ROOM");
 
     }
 
@@ -401,6 +415,12 @@ public class VideoChatActivity extends Activity {
                     int occupancy = ((JSONObject) message).getInt(Constants.JSON_OCCUPANCY);
                     if (occupancy == 0) {
                         showToast("User is not online!");
+                        VideoChatActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mCallStatus.setText("Connect");
+                            }
+                        });
                         return;
                     }
                     JSONObject jsonCall = new JSONObject();
@@ -624,8 +644,15 @@ public class VideoChatActivity extends Activity {
                         room_finished.setVisibility(View.VISIBLE);
                         TextView pause_countdown = (TextView)findViewById(R.id.pause_countdown);
                         pause_countdown.setVisibility(View.VISIBLE);
+                        LinearLayout call_chat_box = (LinearLayout)findViewById(R.id.call_chat_box);
+                        call_chat_box.setVisibility(View.VISIBLE);
+                        LinearLayout preset_hint_box = (LinearLayout)findViewById(R.id.preset_hint_box);
+                        preset_hint_box.setVisibility(View.VISIBLE);
+                        /*TextView scale = (TextView)findViewById(R.id.scale);
+                        scale.setVisibility(View.VISIBLE);*/
                         remoteStream.videoTracks.get(0).addRenderer(new VideoRenderer(remoteRender));
-                        VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
+                        VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED
+                                , false);
                         VideoRendererGui.update(localRender, 72, 65, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, true);
                     }
                     catch (Exception e){ e.printStackTrace(); }
