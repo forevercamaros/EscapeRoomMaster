@@ -265,21 +265,23 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                                         sendMessage(chatMsg,"music");
                                     }
                                     int seconds = (int) (millisUntilFinished / 1000) % 60;
-                                    int minutes =  ((int)(millisUntilFinished / 1000) / 60) % 60;
-                                    int hours = (int)(millisUntilFinished / 1000) / 3600;
-                                    String time = String.format("%02d", hours) + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+                                    int minutes =  ((int)(millisUntilFinished / 1000) / 60);
+                                    //int minutes =  ((int)(millisUntilFinished / 1000) / 60) % 60;
+                                    //int hours = (int)(millisUntilFinished / 1000) / 3600;
+                                    //String time = String.format("%02d", hours) + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+                                    String time = String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
                                     mCallStatus.setText("Restart Timer: " + time);
                                     ChatMessage chatMsg = new ChatMessage(username, time, System.currentTimeMillis());
                                     sendMessage(chatMsg,"time");
                                 }
 
                                 public void onFinish() {
-                                    mCallStatus.setText("Restart Timer: " + "00:00:00");
+                                    mCallStatus.setText("Restart Timer: " + "00:00");
                                     ChatMessage chatMsg = new ChatMessage(username, "Now You DIE!!!!", System.currentTimeMillis());
                                     sendMessage(chatMsg,"time");
                                     chatMsg = new ChatMessage(username, "turn off Family Room Lamp", System.currentTimeMillis());
                                     sendMessage(chatMsg,"assistant_command");
-                                    chatMsg = new ChatMessage(username,"win",System.currentTimeMillis());
+                                    chatMsg = new ChatMessage(username,"lose",System.currentTimeMillis());
                                     sendMessage(chatMsg,"music");
                                     try{
                                         Thread.sleep(500);
