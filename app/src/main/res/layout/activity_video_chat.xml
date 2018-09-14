@@ -144,6 +144,13 @@
                 android:layout_weight=".25"
                 android:onClick="pause_countdown"
                 android:visibility="gone"/>
+            <ImageButton
+                android:id="@+id/btnSwitchCameras"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/switch_camera_background"
+                android:src="@drawable/switch_camera"
+                android:visibility="gone"/>
         </LinearLayout>
         <TextView
             android:id="@+id/scale"
@@ -159,17 +166,6 @@
             android:layout_height="wrap_content"
             android:layout_above="@id/button_box"
             android:visibility="gone"/>
-
-        <!--<ImageButton
-            android:id="@+id/btnSwitchCameras"
-            android:layout_centerHorizontal="true"
-            android:contentDescription="Send"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/switch_camera_background"
-            android:src="@drawable/switch_camera"
-            android:layout_alignRight="@id/button_box"
-            android:visibility="gone"/>-->
 
     </RelativeLayout>
 

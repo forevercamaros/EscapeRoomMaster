@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.MediaRecorder;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
@@ -22,6 +23,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
@@ -75,8 +77,8 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
     private PnRTCClient pnRTCClient;
     private VideoSource localVideoSource;
-    private VideoRenderer.Callbacks localRender;
     private VideoRenderer.Callbacks remoteRender;
+    private VideoRenderer.Callbacks remoteRender2;
     private PinchZoomGLSurfaceView videoView;
     private EditText mChatEditText;
     private TextView mCallStatus;
@@ -98,6 +100,15 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
     private Context context;
 
+
+    private int currentCamera = 1;
+
+    private Boolean cam1Connected = false, cam2Connected = false;
+
+    private VideoRenderer videoRenderer1, videoRenderer2;
+
+    private MediaStream remoteStream1, remoteStream2;
+
     @Override
     public void onScaleChange(float scale) {
         TextView txtScale = (TextView)findViewById(R.id.scale);
@@ -108,6 +119,46 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat);
+
+        ImageButton switchCameras = (ImageButton)findViewById(R.id.btnSwitchCameras);
+        switchCameras.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                view.setClickable(false);
+                view.setEnabled(false);
+                remoteStream1.videoTracks.get(0).removeRenderer(videoRenderer1);
+                remoteStream2.videoTracks.get(0).removeRenderer(videoRenderer2);
+                VideoRendererGui.remove(remoteRender);
+                VideoRendererGui.remove(remoteRender2);
+                if (currentCamera == 1){
+                    currentCamera = 2;
+                    remoteRender2 = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
+                    remoteRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
+                    videoRenderer1 = new VideoRenderer(remoteRender);
+                    videoRenderer2 = new VideoRenderer(remoteRender2);
+                    remoteStream1.videoTracks.get(0).addRenderer(videoRenderer1);
+                    remoteStream2.videoTracks.get(0).addRenderer(videoRenderer2);
+                    VideoRendererGui.update(remoteRender2, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
+                    VideoRendererGui.update(remoteRender, 72, 65, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, false);
+                }else {
+                    currentCamera = 1;
+                    remoteRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
+                    remoteRender2 = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
+                    videoRenderer1 = new VideoRenderer(remoteRender);
+                    videoRenderer2 = new VideoRenderer(remoteRender2);
+                    remoteStream1.videoTracks.get(0).addRenderer(videoRenderer1);
+                    remoteStream2.videoTracks.get(0).addRenderer(videoRenderer2);
+                    VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
+                    VideoRendererGui.update(remoteRender2, 72, 65, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, false);
+                }
+                try{
+                    Thread.sleep(2000);
+                }catch (Exception e){}
+
+                view.setClickable(true);
+                view.setEnabled(true);
+            }
+        });
 
         TextView room_finished = (TextView)findViewById(R.id.room_finished);
         context=this;
@@ -286,7 +337,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
         // Now that VideoRendererGui is ready, we can get our VideoRenderer.
         // IN THIS ORDER. Effects which is on top or bottom
         remoteRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
-        localRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, true);
+        remoteRender2 = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
 
         // We start out with an empty MediaStream object, created with help from our PeerConnectionFactory
         //  Note that LOCAL_MEDIA_STREAM_ID can be any string
@@ -302,12 +353,13 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
         // Listen on a channel. This is your "phone number," also set the max chat users.
         this.pnRTCClient.listenOn("Kevin");
-        this.pnRTCClient.setMaxConnections(1);
+        this.pnRTCClient.setMaxConnections(2);
 
         initPubNub();
 
         mCallStatus.setText("Connecting...");
         dispatchCall("ESCAPE_ROOM");
+        dispatchCall("ESCAPE_ROOM_2");
 
     }
 
@@ -619,7 +671,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                 @Override
                 public void run() {
                     if(localStream.videoTracks.size()==0) return;
-                    localStream.videoTracks.get(0).addRenderer(new VideoRenderer(localRender));
+                    //localStream.videoTracks.get(0).addRenderer(new VideoRenderer(localRender));
                 }
             });
         }
@@ -635,27 +687,49 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                 @Override
                 public void run() {
                     Toast.makeText(VideoChatActivity.this,"Connected to " + peer.getId(), Toast.LENGTH_SHORT).show();
-                    try {
-                        if(remoteStream.audioTracks.size()==0 || remoteStream.videoTracks.size()==0) return;
-                        mCallStatus.setText("Start Timer");
-                        TextView reset_room = (TextView)findViewById(R.id.reset_room);
-                        reset_room.setVisibility(View.VISIBLE);
-                        TextView room_finished = (TextView)findViewById(R.id.room_finished);
-                        room_finished.setVisibility(View.VISIBLE);
-                        TextView pause_countdown = (TextView)findViewById(R.id.pause_countdown);
-                        pause_countdown.setVisibility(View.VISIBLE);
-                        LinearLayout call_chat_box = (LinearLayout)findViewById(R.id.call_chat_box);
-                        call_chat_box.setVisibility(View.VISIBLE);
-                        LinearLayout preset_hint_box = (LinearLayout)findViewById(R.id.preset_hint_box);
-                        preset_hint_box.setVisibility(View.VISIBLE);
-                        /*TextView scale = (TextView)findViewById(R.id.scale);
-                        scale.setVisibility(View.VISIBLE);*/
-                        remoteStream.videoTracks.get(0).addRenderer(new VideoRenderer(remoteRender));
-                        VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED
-                                , false);
-                        VideoRendererGui.update(localRender, 72, 65, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, true);
+                    if (peer.getId().equals("ESCAPE_ROOM")){
+                        try {
+                            if(remoteStream.audioTracks.size()==0 || remoteStream.videoTracks.size()==0) return;
+                            cam1Connected=true;
+                            mCallStatus.setText("Start Timer");
+                            TextView reset_room = (TextView)findViewById(R.id.reset_room);
+                            reset_room.setVisibility(View.VISIBLE);
+                            TextView room_finished = (TextView)findViewById(R.id.room_finished);
+                            room_finished.setVisibility(View.VISIBLE);
+                            TextView pause_countdown = (TextView)findViewById(R.id.pause_countdown);
+                            pause_countdown.setVisibility(View.VISIBLE);
+                            LinearLayout call_chat_box = (LinearLayout)findViewById(R.id.call_chat_box);
+                            call_chat_box.setVisibility(View.VISIBLE);
+                            LinearLayout preset_hint_box = (LinearLayout)findViewById(R.id.preset_hint_box);
+                            preset_hint_box.setVisibility(View.VISIBLE);
+                            /*TextView scale = (TextView)findViewById(R.id.scale);
+                            scale.setVisibility(View.VISIBLE);*/
+                            videoRenderer1 = new VideoRenderer(remoteRender);
+                            remoteStream1=remoteStream;
+                            remoteStream1.videoTracks.get(0).addRenderer(videoRenderer1);
+                            VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    }else {
+                        try {
+                            if(remoteStream.audioTracks.size()==0 || remoteStream.videoTracks.size()==0) return;
+                            cam2Connected=true;
+                            videoRenderer2 = new VideoRenderer(remoteRender2);
+                            remoteStream2=remoteStream;
+                            remoteStream2.videoTracks.get(0).addRenderer(videoRenderer2);
+                            VideoRendererGui.update(remoteRender2, 72, 65, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, false);
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                        }
                     }
-                    catch (Exception e){ e.printStackTrace(); }
+                    if (cam2Connected && cam1Connected){
+                        ImageButton btnSwitchCameras = (ImageButton)findViewById(R.id.btnSwitchCameras);
+                        btnSwitchCameras.setVisibility(View.VISIBLE);
+                    }
+
                 }
             });
         }
