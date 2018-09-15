@@ -1,16 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <string-array name="hints_array">
-        <item>Don\'t be stupid</item>
-        <item>Look behind you</item>
-        <item>I\'m Watching You</item>
-        <item>I feed on your tears</item>
-        <item>Another one bites the dust</item>
-        <item>Can\'t we all just get along?</item>
-        <item>You look like 100 miles of bad road</item>
-    </string-array>
-
     <string name="app_name">Escape Room Master</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
