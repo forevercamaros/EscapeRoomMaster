@@ -19,38 +19,50 @@
         <LinearLayout
             android:id="@+id/call_chat_box"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:background="#64000000"
+            android:layout_height="match_parent"
             android:layout_alignParentBottom="true"
             android:orientation="horizontal"
-            android:visibility="gone">
-
-            <EditText
-                android:id="@+id/chat_input"
-                android:textColor="#FFF"
-                android:backgroundTint="@color/pn_blue"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="4"
-                android:textColorHint="@color/white"
-                android:hint="Enter Message..."/>
+            android:visibility="visible">
 
             <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="match_parent">
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:padding="10dp"
+                android:layout_gravity="top">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="bottom">
+                    <EditText
+                        android:id="@+id/chat_input"
+                        android:textColor="#FFF"
+                        android:background="@color/pn_blue"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="4"
+                        android:textColorHint="@color/white"
+                        android:hint="Enter Hint Here"/>
 
-                <ImageButton
-                    android:layout_centerHorizontal="true"
-                    android:contentDescription="Send"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/round_button_send"
-                    android:src="@drawable/ic_action_send_now"
-                    android:onClick="sendMessage" />
+                    <RelativeLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="40dp">
+
+                        <ImageButton
+                            android:layout_centerHorizontal="true"
+                            android:contentDescription="Send"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/round_button_send"
+                            android:src="@drawable/ic_action_send_now"
+                            android:onClick="sendMessage" />
+
+                    </RelativeLayout>
+                </LinearLayout>
+
 
             </RelativeLayout>
+
 
         </LinearLayout>
 
@@ -58,7 +70,7 @@
             android:id="@+id/button_box"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_above="@+id/call_chat_box">
+            android:layout_alignParentBottom="true">
             <TextView
                 android:id="@+id/call_status"
                 android:text=""
@@ -85,7 +97,6 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight=".25"
-                android:onClick="pause_countdown"
                 android:visibility="gone"/>
             <TextView
                 android:id="@+id/reset_room"
@@ -114,7 +125,6 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight=".25"
-                android:onClick="pause_countdown"
                 android:visibility="gone"/>
             <ImageButton
                 android:id="@+id/btnSwitchCameras"

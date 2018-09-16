@@ -1,5 +1,6 @@
 package com.forevercamaros.charlessummers.escaperoommaster;
 
+import android.animation.Animator;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -111,7 +112,9 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
     private TextView reset_room;
     private String timeLeft;
 
-    TextView pause_countdown;
+    private TextView pause_countdown;
+
+    private LinearLayout button_box;
 
     @Override
     public void onScaleChange(float scale) {
@@ -123,6 +126,8 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat);
+
+        button_box = (LinearLayout)findViewById(R.id.button_box);
 
         pause_countdown = (TextView)findViewById(R.id.pause_countdown);
         pause_countdown.setOnClickListener(new View.OnClickListener() {
@@ -402,12 +407,57 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
         final LinearLayout call_chat_box = (LinearLayout)findViewById(R.id.call_chat_box);
         if (mVisible){
             mVisible=false;
-            call_chat_box.animate().alpha(0.0f).setDuration(1000).start();
-            call_chat_box.setVisibility(View.GONE);
+            button_box.animate().alpha((0.0f)).setDuration((1000)).setListener(new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationStart(Animator animator) {
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animator) {
+                    button_box.setVisibility(View.GONE);
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animator) {
+
+                }
+
+                @Override
+                public void onAnimationRepeat(Animator animator) {
+
+                }
+            }).start();
+            call_chat_box.animate().alpha(0.0f).setDuration(1000).setListener(new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationStart(Animator animator) {
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animator) {
+                    call_chat_box.setVisibility(View.GONE);
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animator) {
+
+                }
+
+                @Override
+                public void onAnimationRepeat(Animator animator) {
+
+                }
+            }).start();
+
         }else {
             mVisible=true;
-            call_chat_box.animate().alpha(1.0f).setDuration(1000).start();
+            call_chat_box.animate().setListener(null);
+            button_box.animate().setListener(null);
             call_chat_box.setVisibility(View.VISIBLE);
+            call_chat_box.animate().alpha(1.0f).setDuration(1000).start();
+            button_box.setVisibility(View.VISIBLE);
+            button_box.animate().alpha(1.0f).setDuration(1000).start();
         }
     }
 
