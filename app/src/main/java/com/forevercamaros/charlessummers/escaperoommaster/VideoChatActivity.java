@@ -1,23 +1,36 @@
 package com.forevercamaros.charlessummers.escaperoommaster;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ListActivity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.media.MediaRecorder;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
@@ -26,6 +39,9 @@ import com.pubnub.api.PubnubException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.webrtc.AudioSource;
+import org.webrtc.AudioTrack;
+import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnection;
 import org.webrtc.PeerConnectionFactory;
@@ -37,9 +53,11 @@ import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import com.forevercamaros.charlessummers.escaperoommaster.adapters.ChatAdapter;
 import com.forevercamaros.charlessummers.escaperoommaster.adt.ChatMessage;
 import com.forevercamaros.charlessummers.escaperoommaster.servers.XirSysRequest;
 import com.forevercamaros.charlessummers.escaperoommaster.util.Constants;
@@ -64,7 +82,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
     private PinchZoomGLSurfaceView videoView;
     private EditText mChatEditText;
     private TextView mCallStatus;
-    private TextView pause_countdown;
+    private CountDownTimerPausable countDownTimer;
 
     private boolean countdownPaused = false;
 
@@ -76,6 +94,9 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
     private String stdByChannel;
     private Pubnub mPubNub;
 
+    private boolean TwoMinuteWarningSent = false;
+
+    private int countDownLength =600000;
 
     private Context context;
 
@@ -150,8 +171,17 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                 dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        ChatMessage chatMsg = new ChatMessage(username, "", System.currentTimeMillis());
-                        sendMessage(chatMsg,"room_finished");
+                        countDownTimer.cancel();
+                        ChatMessage chatMsg = new ChatMessage(username, "NOOO!!!\nYou Win!", System.currentTimeMillis());
+                        sendMessage(chatMsg,"time");
+                        chatMsg = new ChatMessage(username, "turn off family room lamp", System.currentTimeMillis());
+                        sendMessage(chatMsg,"assistant_command");
+                        chatMsg = new ChatMessage(username,"turn on outlet",System.currentTimeMillis());
+                        sendMessage(chatMsg,"assistant_command");
+                        chatMsg = new ChatMessage(username,"turn on living room floor lamp",System.currentTimeMillis());
+                        sendMessage(chatMsg,"assistant_command");
+                        chatMsg = new ChatMessage(username,"win",System.currentTimeMillis());
+                        sendMessage(chatMsg,"music");
 
                     }
                 });
@@ -171,8 +201,19 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                 dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        ChatMessage chatMessage = new ChatMessage(username,"", SystemClock.currentThreadTimeMillis());
-                        sendMessage(chatMessage,"reset_room");
+                        if (countDownTimer != null){
+                            countDownTimer.cancel();
+                        }
+                        TwoMinuteWarningSent=true;
+                        ChatMessage chatMsg = new ChatMessage(username, "stop_music", System.currentTimeMillis());
+                        sendMessage(chatMsg,"music");
+                        chatMsg = new ChatMessage(username, "ARE YOU READY?", System.currentTimeMillis());
+                        sendMessage(chatMsg,"time");
+                        chatMsg = new ChatMessage(username, "turn on family room lamp", System.currentTimeMillis());
+                        sendMessage(chatMsg,"assistant_command");
+                        chatMsg = new ChatMessage(username,"turn off outlet",System.currentTimeMillis());
+                        sendMessage(chatMsg,"assistant_command");
+                        mCallStatus.setText("Start Timer");
                     }
                 });
                 dlgAlert.setNegativeButton("No",null);
@@ -188,45 +229,14 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
         this.mChatEditText = (EditText) findViewById(R.id.chat_input);
 
+        String[] hints = getResources().getStringArray(R.array.hints_array);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.spinner_item, hints);
 
-        pause_countdown = (TextView)findViewById(R.id.pause_countdown);
-        pause_countdown.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (countdownPaused){
-                    AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
-                    dlgAlert.setMessage("Are you sure that you wish to unPause the countdown?");
-                    dlgAlert.setTitle("Escape Room Master");
-                    dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            ChatMessage chatMsg = new ChatMessage(username,"", System.currentTimeMillis());
-                            sendMessage(chatMsg,"unpause_countdown");
-                        }
-                    });
-                    dlgAlert.setNegativeButton("No",null);
-                    dlgAlert.setCancelable(true);
-                    dlgAlert.create().show();
-
-                }else{
-                    AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
-                    dlgAlert.setMessage("Are you sure that you wish to pause the countdown?");
-                    dlgAlert.setTitle("Escape Room Master");
-                    dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            ChatMessage chatMsg = new ChatMessage(username,"", System.currentTimeMillis());
-                            sendMessage(chatMsg,"pause_countdown");
-                        }
-                    });
-                    dlgAlert.setNegativeButton("No",null);
-                    dlgAlert.setCancelable(true);
-                    dlgAlert.create().show();
-                }
-            }
-        });
+        Spinner hintSpinner = (Spinner)findViewById(R.id.hintSpinner);
+        hintSpinner.setAdapter(adapter);
 
         this.mCallStatus   = (TextView) findViewById(R.id.call_status);
+
         mCallStatus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -240,8 +250,45 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                     dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            ChatMessage chatMsg = new ChatMessage(username, "", System.currentTimeMillis());
-                            sendMessage(chatMsg,"start_room");
+                            if (countDownTimer != null){
+                                countDownTimer.cancel();
+                            }
+                            ChatMessage chatMsg = new ChatMessage(username,"background", System.currentTimeMillis());
+                            sendMessage(chatMsg,"music");
+                            TwoMinuteWarningSent=false;
+                            countDownTimer = new CountDownTimerPausable(countDownLength, 1000) {
+
+                                public void onTick(long millisUntilFinished) {
+                                    if (millisUntilFinished<120000 && !TwoMinuteWarningSent){
+                                        TwoMinuteWarningSent=true;
+                                        ChatMessage chatMsg = new ChatMessage(username, "2min_warning", System.currentTimeMillis());
+                                        sendMessage(chatMsg,"music");
+                                    }
+                                    int seconds = (int) (millisUntilFinished / 1000) % 60;
+                                    int minutes =  ((int)(millisUntilFinished / 1000) / 60) % 60;
+                                    int hours = (int)(millisUntilFinished / 1000) / 3600;
+                                    String time = String.format("%02d", hours) + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+                                    mCallStatus.setText("Restart Timer: " + time);
+                                    ChatMessage chatMsg = new ChatMessage(username, time, System.currentTimeMillis());
+                                    sendMessage(chatMsg,"time");
+                                }
+
+                                public void onFinish() {
+                                    mCallStatus.setText("Restart Timer: " + "00:00:00");
+                                    ChatMessage chatMsg = new ChatMessage(username, "Now You DIE!!!!", System.currentTimeMillis());
+                                    sendMessage(chatMsg,"time");
+                                    chatMsg = new ChatMessage(username, "turn off Family Room Lamp", System.currentTimeMillis());
+                                    sendMessage(chatMsg,"assistant_command");
+                                    chatMsg = new ChatMessage(username,"win",System.currentTimeMillis());
+                                    sendMessage(chatMsg,"music");
+                                    try{
+                                        Thread.sleep(500);
+                                    }catch (Exception e){}
+
+                                    chatMsg = new ChatMessage(username,"turn off outlet",System.currentTimeMillis());
+                                    sendMessage(chatMsg,"assistant_command");
+                                }
+                            }.start();
                         }
                     });
                     dlgAlert.setNegativeButton("No",null);
@@ -316,17 +363,60 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
     }
 
+    public void pause_countdown(View view){
+        if (countDownTimer != null){
+            final TextView btnPause = (TextView)findViewById(R.id.pause_countdown);
+            if (countdownPaused){
+                AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
+                dlgAlert.setMessage("Are you sure that you wish to pause the countdown?");
+                dlgAlert.setTitle("Escape Room Master");
+                dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        countdownPaused=false;
+                        countDownTimer.start();
+                        btnPause.setText("Pause Countdown");
+                    }
+                });
+                dlgAlert.setNegativeButton("No",null);
+                dlgAlert.setCancelable(true);
+                dlgAlert.create().show();
+
+            }else{
+                AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
+                dlgAlert.setMessage("Are you sure that you wish to unpause the countdown?");
+                dlgAlert.setTitle("Escape Room Master");
+                dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        countdownPaused=true;
+                        countDownTimer.pause();
+                        btnPause.setText("unPause Countdown");
+                    }
+                });
+                dlgAlert.setNegativeButton("No",null);
+                dlgAlert.setCancelable(true);
+                dlgAlert.create().show();
+            }
+        }
+    }
+
+
     public void toggle(View view) {
         final LinearLayout call_chat_box = (LinearLayout)findViewById(R.id.call_chat_box);
+        final LinearLayout preset_hint_box = (LinearLayout)findViewById(R.id.preset_hint_box);
         if (mVisible){
             mVisible=false;
             call_chat_box.animate().alpha(0.0f).setDuration(1000).start();
             call_chat_box.setVisibility(View.GONE);
-
+            preset_hint_box.animate().alpha(0.0f).setDuration(1000).start();
+            preset_hint_box.setVisibility(View.GONE);
         }else {
             mVisible=true;
             call_chat_box.animate().alpha(1.0f).setDuration(1000).start();
             call_chat_box.setVisibility(View.VISIBLE);
+            preset_hint_box.animate().alpha(1.0f).setDuration(1000).start();
+            preset_hint_box.setVisibility(View.VISIBLE);
         }
     }
 
@@ -535,10 +625,32 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
         mChatEditText.setText("");
     }
 
+    public void sendMessage2(View view) {
+        Spinner hintSpinner = (Spinner)findViewById(R.id.hintSpinner);
+        String message = hintSpinner.getSelectedItem().toString();
+        ChatMessage chatMsg = new ChatMessage(this.username, message, System.currentTimeMillis());
+        sendMessage(chatMsg,"hint");
+    }
+
+
     private void  sendMessage(ChatMessage chatMsg, String type){
         JSONObject messageJSON = new JSONObject();
         try {
-            messageJSON.put(Constants.JSON_MSG_UUID, type);
+            switch (type){
+                case "time":
+                    messageJSON.put(Constants.JSON_MSG_UUID, "time");
+                    break;
+                case "assistant_command":
+                    messageJSON.put(Constants.JSON_MSG_UUID, "assistant_command");
+                    break;
+                case "music":
+                    messageJSON.put(Constants.JSON_MSG_UUID, "music");
+                    break;
+                default:
+                    messageJSON.put(Constants.JSON_MSG_UUID, chatMsg.getSender());
+                    break;
+            }
+
             messageJSON.put(Constants.JSON_MSG, chatMsg.getMessage());
             messageJSON.put(Constants.JSON_TIME, chatMsg.getTimeStamp());
             this.pnRTCClient.transmitAll(messageJSON);
@@ -584,9 +696,12 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                             reset_room.setVisibility(View.VISIBLE);
                             TextView room_finished = (TextView)findViewById(R.id.room_finished);
                             room_finished.setVisibility(View.VISIBLE);
+                            TextView pause_countdown = (TextView)findViewById(R.id.pause_countdown);
                             pause_countdown.setVisibility(View.VISIBLE);
                             LinearLayout call_chat_box = (LinearLayout)findViewById(R.id.call_chat_box);
                             call_chat_box.setVisibility(View.VISIBLE);
+                            LinearLayout preset_hint_box = (LinearLayout)findViewById(R.id.preset_hint_box);
+                            preset_hint_box.setVisibility(View.VISIBLE);
                             /*TextView scale = (TextView)findViewById(R.id.scale);
                             scale.setVisibility(View.VISIBLE);*/
                             videoRenderer1 = new VideoRenderer(remoteRender);
@@ -628,44 +743,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                 String uuid = jsonMsg.getString(Constants.JSON_MSG_UUID);
                 String msg  = jsonMsg.getString(Constants.JSON_MSG);
                 long   time = jsonMsg.getLong(Constants.JSON_TIME);
-                switch (uuid){
-                    case "time":
-                        final String mCallStatusText = msg;
-                        VideoChatActivity.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mCallStatus.setText(mCallStatusText);
-                            }
-                        });
-                        break;
-                    case "paused":
-                        countdownPaused = true;
-                        VideoChatActivity.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                pause_countdown.setText("unPause Countdown");
-                            }
-                        });
-                        break;
-                    case "unpaused":
-                        countdownPaused = false;
-                        VideoChatActivity.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                pause_countdown.setText("Pause Countdown");
-                            }
-                        });
-                        break;
-                    case "room_reset":
-                        VideoChatActivity.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                pause_countdown.setText("Pause Countdown");
-                                mCallStatus.setText("Start Timer");
-                            }
-                        });
-                        break;
-                }
+                final ChatMessage chatMsg = new ChatMessage(uuid, msg, time);
             } catch (JSONException e){
                 e.printStackTrace();
             }
