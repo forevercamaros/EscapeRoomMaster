@@ -9,6 +9,34 @@
         android:layout_height="match_parent"
         android:layout_width="match_parent"
         android:onClick="toggle"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:id="@+id/preset_hint_box"
+        android:visibility="gone">
+        <Spinner
+            android:id="@+id/hintSpinner"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="4"></Spinner>
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent">
+
+            <ImageButton
+                android:layout_centerHorizontal="true"
+                android:contentDescription="Send"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/round_button_send"
+                android:src="@drawable/ic_action_send_now"
+                android:onClick="sendMessage2" />
+
+        </RelativeLayout>
+    </LinearLayout>
+
     <RelativeLayout
         android:id="@+id/control_box"
         android:layout_width="match_parent"
@@ -85,6 +113,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight=".25"
+                android:onClick="pause_countdown"
                 android:visibility="gone"/>
             <TextView
                 android:id="@+id/reset_room"
@@ -113,6 +142,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight=".25"
+                android:onClick="pause_countdown"
                 android:visibility="gone"/>
             <ImageButton
                 android:id="@+id/btnSwitchCameras"
