@@ -97,7 +97,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
     private boolean TwoMinuteWarningSent = false;
 
-    private int countDownLength =130000;
+    private int countDownLength =1800000;
 
     private Context context;
 
@@ -116,7 +116,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
     private LinearLayout button_box;
 
-    private boolean boolTestTimer = true;
+    private boolean boolTestTimer = false;
 
     @Override
     public void onScaleChange(float scale) {
