@@ -786,7 +786,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                     Toast.makeText(VideoChatActivity.this,"Connected to " + peer.getId(), Toast.LENGTH_SHORT).show();
                     if (peer.getId().equals("ESCAPE_ROOM")){
                         try {
-                            if(remoteStream.audioTracks.size()==0 || remoteStream.videoTracks.size()==0) return;
+                            if(remoteStream.videoTracks.size()==0) return;
                             cam1Connected=true;
                             mCallStatus.setText("Start Timer");
                             TextView reset_room = (TextView)findViewById(R.id.reset_room);
