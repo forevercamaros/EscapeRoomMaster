@@ -116,10 +116,37 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
     private LinearLayout button_box;
 
+    private boolean boolTestTimer = true;
+
     @Override
     public void onScaleChange(float scale) {
-        TextView txtScale = (TextView)findViewById(R.id.scale);
-        txtScale.setText((Float.toString(scale)));
+        final TextView lblScale = (TextView)findViewById(R.id.lblScale);
+        lblScale.setText((Float.toString(scale)));
+        lblScale.animate().setListener(null);
+        lblScale.setVisibility(View.VISIBLE);
+        lblScale.setAlpha(1.0f);
+        lblScale.animate().setDuration(1500).alpha(0.0f).setListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animator) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animator) {
+                lblScale.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animator) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animator) {
+
+            }
+        }).setStartDelay(1500);
+
     }
 
     @Override
@@ -178,28 +205,28 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                 view.setEnabled(false);
                 remoteStream1.videoTracks.get(0).removeRenderer(videoRenderer1);
                 remoteStream2.videoTracks.get(0).removeRenderer(videoRenderer2);
-                VideoRendererGui.remove(remoteRender);
-                VideoRendererGui.remove(remoteRender2);
+                VideoRenderGuiWithZoom.remove(remoteRender);
+                VideoRenderGuiWithZoom.remove(remoteRender2);
                 if (currentCamera == 1){
                     currentCamera = 2;
-                    remoteRender2 = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
-                    remoteRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
+                    remoteRender2 = VideoRenderGuiWithZoom.create(0, 0, 100, 100, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_BALANCED, false);
+                    remoteRender = VideoRenderGuiWithZoom.create(0, 0, 100, 100, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_FILL, false);
                     videoRenderer1 = new VideoRenderer(remoteRender);
                     videoRenderer2 = new VideoRenderer(remoteRender2);
                     remoteStream1.videoTracks.get(0).addRenderer(videoRenderer1);
                     remoteStream2.videoTracks.get(0).addRenderer(videoRenderer2);
-                    VideoRendererGui.update(remoteRender2, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
-                    VideoRendererGui.update(remoteRender, 72, 65, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, false);
+                    VideoRenderGuiWithZoom.update(remoteRender2, 0, 0, 100, 100, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_BALANCED, false);
+                    VideoRenderGuiWithZoom.update(remoteRender, 72, 65, 25, 25, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_FIT, false);
                 }else {
                     currentCamera = 1;
-                    remoteRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
-                    remoteRender2 = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
+                    remoteRender = VideoRenderGuiWithZoom.create(0, 0, 100, 100, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_BALANCED, false);
+                    remoteRender2 = VideoRenderGuiWithZoom.create(0, 0, 100, 100, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_FILL, false);
                     videoRenderer1 = new VideoRenderer(remoteRender);
                     videoRenderer2 = new VideoRenderer(remoteRender2);
                     remoteStream1.videoTracks.get(0).addRenderer(videoRenderer1);
                     remoteStream2.videoTracks.get(0).addRenderer(videoRenderer2);
-                    VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
-                    VideoRendererGui.update(remoteRender2, 72, 65, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, false);
+                    VideoRenderGuiWithZoom.update(remoteRender, 0, 0, 100, 100, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_BALANCED, false);
+                    VideoRenderGuiWithZoom.update(remoteRender2, 72, 65, 25, 25, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_FIT, false);
                 }
                 try{
                     Thread.sleep(2000);
@@ -226,7 +253,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                         sendMessage(chatMsg,"time");
                         chatMsg = new ChatMessage(username, "turn off family room lamp", System.currentTimeMillis());
                         sendMessage(chatMsg,"assistant_command");
-                        chatMsg = new ChatMessage(username,"turn on outlet",System.currentTimeMillis());
+                        chatMsg = new ChatMessage(username,"turn on random outlet",System.currentTimeMillis());
                         sendMessage(chatMsg,"assistant_command");
                         chatMsg = new ChatMessage(username,"turn on living room floor lamp",System.currentTimeMillis());
                         sendMessage(chatMsg,"assistant_command");
@@ -267,9 +294,6 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
         this.mChatEditText = (EditText) findViewById(R.id.chat_input);
 
-        String[] hints = getResources().getStringArray(R.array.hints_array);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.spinner_item, hints);
-
         this.mCallStatus   = (TextView) findViewById(R.id.call_status);
 
         mCallStatus.setOnClickListener(new View.OnClickListener() {
@@ -285,50 +309,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                     dlgAlert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            if (countDownTimer != null){
-                                countDownTimer.cancel();
-                            }
-                            ChatMessage chatMsg = new ChatMessage(username,"background", System.currentTimeMillis());
-                            sendMessage(chatMsg,"music");
-                            TwoMinuteWarningSent=false;
-                            countDownTimer = new CountDownTimerPausable(countDownLength, 1000) {
-
-                                public void onTick(long millisUntilFinished) {
-                                    if (millisUntilFinished<120000 && !TwoMinuteWarningSent){
-                                        TwoMinuteWarningSent=true;
-                                        ChatMessage chatMsg = new ChatMessage(username, "2min_warning", System.currentTimeMillis());
-                                        sendMessage(chatMsg,"music");
-                                    }
-                                    int seconds = (int) (millisUntilFinished / 1000) % 60;
-                                    int minutes =  ((int)(millisUntilFinished / 1000) / 60) % 60;
-                                    int hours = (int)(millisUntilFinished / 1000) / 3600;
-
-                                    if (hours == 0) {
-                                        timeLeft = String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
-                                    }else{
-                                        timeLeft = String.format("%02d", hours) + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
-                                    }
-                                    mCallStatus.setText("Restart Timer: " + timeLeft);
-                                    ChatMessage chatMsg = new ChatMessage(username, timeLeft, System.currentTimeMillis());
-                                    sendMessage(chatMsg,"time");
-                                }
-
-                                public void onFinish() {
-                                    mCallStatus.setText("Restart Timer: " + "00:00:00");
-                                    ChatMessage chatMsg = new ChatMessage(username, "Now You DIE!!!!", System.currentTimeMillis());
-                                    sendMessage(chatMsg,"time");
-                                    chatMsg = new ChatMessage(username, "turn off Family Room Lamp", System.currentTimeMillis());
-                                    sendMessage(chatMsg,"assistant_command");
-                                    chatMsg = new ChatMessage(username,"win",System.currentTimeMillis());
-                                    sendMessage(chatMsg,"music");
-                                    try{
-                                        Thread.sleep(500);
-                                    }catch (Exception e){}
-
-                                    chatMsg = new ChatMessage(username,"turn off outlet",System.currentTimeMillis());
-                                    sendMessage(chatMsg,"assistant_command");
-                                }
-                            }.start();
+                            start_room();
                         }
                     });
                     dlgAlert.setNegativeButton("No",null);
@@ -366,18 +347,18 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
         VideoTrack localVideoTrack = pcFactory.createVideoTrack(VIDEO_TRACK_ID, localVideoSource);
 
 
-        // To create our VideoRenderer, we can use the included VideoRendererGui for simplicity
+        // To create our VideoRenderer, we can use the included VideoRenderGuiWithZoom for simplicity
         // First we need to set the GLSurfaceView that it should render to
         this.videoView = (PinchZoomGLSurfaceView) findViewById(R.id.gl_surface);
 
         videoView.addScaleChangeListener(this);
         // Then we set that view, and pass a Runnable to run once the surface is ready
-        VideoRendererGui.setView(videoView, null);
+        VideoRenderGuiWithZoom.setView(videoView, null);
 
-        // Now that VideoRendererGui is ready, we can get our VideoRenderer.
+        // Now that VideoRenderGuiWithZoom is ready, we can get our VideoRenderer.
         // IN THIS ORDER. Effects which is on top or bottom
-        remoteRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
-        remoteRender2 = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
+        remoteRender = VideoRenderGuiWithZoom.create(0, 0, 100, 100, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_BALANCED, false);
+        remoteRender2 = VideoRenderGuiWithZoom.create(0, 0, 100, 100, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_FILL, false);
 
         // We start out with an empty MediaStream object, created with help from our PeerConnectionFactory
         //  Note that LOCAL_MEDIA_STREAM_ID can be any string
@@ -403,6 +384,60 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
     }
 
+    public void start_room(){
+        if (countDownTimer != null){
+            countDownTimer.cancel();
+        }
+        ChatMessage chatMsg = new ChatMessage(username,"background", System.currentTimeMillis());
+        sendMessage(chatMsg,"music");
+        TwoMinuteWarningSent=false;
+        countDownTimer = new CountDownTimerPausable(countDownLength, 1000) {
+
+            public void onTick(long millisUntilFinished) {
+                if (millisUntilFinished<120000 && !TwoMinuteWarningSent){
+                    TwoMinuteWarningSent=true;
+                    ChatMessage chatMsg = new ChatMessage(username, "2min_warning", System.currentTimeMillis());
+                    sendMessage(chatMsg,"music");
+                }
+                int seconds = (int) (millisUntilFinished / 1000) % 60;
+                int minutes =  ((int)(millisUntilFinished / 1000) / 60) % 60;
+                int hours = (int)(millisUntilFinished / 1000) / 3600;
+
+                if (hours == 0) {
+                    timeLeft = String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+                }else{
+                    timeLeft = String.format("%02d", hours) + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+                }
+                mCallStatus.setText("Restart Timer: " + timeLeft);
+                ChatMessage chatMsg = new ChatMessage(username, timeLeft, System.currentTimeMillis());
+                sendMessage(chatMsg,"time");
+            }
+
+            public void onFinish() {
+                mCallStatus.setText("Restart Timer: " + "00:00:00");
+                ChatMessage chatMsg = new ChatMessage(username, "Your Souls Are MINE!!!!", System.currentTimeMillis());
+                sendMessage(chatMsg,"time");
+                chatMsg = new ChatMessage(username, "turn off Family Room Lamp", System.currentTimeMillis());
+                sendMessage(chatMsg,"assistant_command");
+                chatMsg = new ChatMessage(username, "turn on living room floor lamp", System.currentTimeMillis());
+                sendMessage(chatMsg,"assistant_command");
+                chatMsg = new ChatMessage(username, "turn on random outlet", System.currentTimeMillis());
+                sendMessage(chatMsg,"assistant_command");
+                chatMsg = new ChatMessage(username,"lose",System.currentTimeMillis());
+                sendMessage(chatMsg,"music");
+                if (boolTestTimer){
+                    try{
+                        Thread.sleep(2000);
+                    }catch (Exception e){}
+                    reset_room();
+                    start_room();
+                }
+                try{
+                    Thread.sleep(500);
+                }catch (Exception e){}
+            }
+        }.start();
+    }
     public void toggle(View view) {
         final LinearLayout call_chat_box = (LinearLayout)findViewById(R.id.call_chat_box);
         if (mVisible){
@@ -555,7 +590,9 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
         sendMessage(chatMsg,"time");
         chatMsg = new ChatMessage(username, "turn on family room lamp", System.currentTimeMillis());
         sendMessage(chatMsg,"assistant_command");
-        chatMsg = new ChatMessage(username,"turn off outlet",System.currentTimeMillis());
+        chatMsg = new ChatMessage(username,"turn off random outlet",System.currentTimeMillis());
+        sendMessage(chatMsg,"assistant_command");
+        chatMsg = new ChatMessage(username,"turn off living room floor lamp",System.currentTimeMillis());
         sendMessage(chatMsg,"assistant_command");
         mCallStatus.setText("Start Timer");
     }
@@ -762,8 +799,24 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                             videoRenderer1 = new VideoRenderer(remoteRender);
                             remoteStream1=remoteStream;
                             remoteStream1.videoTracks.get(0).addRenderer(videoRenderer1);
-                            VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_BALANCED, false);
+                            VideoRenderGuiWithZoom.update(remoteRender, 0, 0, 100, 100, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_BALANCED, false);
                             reset_room();
+                            if (boolTestTimer){
+                                start_room();
+                                new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        while (1==1){
+                                            ChatMessage chatMsg = new ChatMessage(username, "Test Hint", System.currentTimeMillis());
+                                            sendMessage(chatMsg,"hint");
+                                            try{
+                                                Thread.sleep(60000);
+                                            }catch (Exception e){}
+                                        }
+                                    }
+                                }).start();
+
+                            }
                         }
                         catch (Exception e){
                             e.printStackTrace();
@@ -775,7 +828,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                             videoRenderer2 = new VideoRenderer(remoteRender2);
                             remoteStream2=remoteStream;
                             remoteStream2.videoTracks.get(0).addRenderer(videoRenderer2);
-                            VideoRendererGui.update(remoteRender2, 72, 65, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, false);
+                            VideoRenderGuiWithZoom.update(remoteRender2, 72, 65, 25, 25, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_FIT, false);
                         }
                         catch (Exception e){
                             e.printStackTrace();
