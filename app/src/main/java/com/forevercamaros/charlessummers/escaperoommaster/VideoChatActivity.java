@@ -98,6 +98,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
     private boolean TwoMinuteWarningSent = false;
 
     private int countDownLength =1800000;
+    //private int countDownLength =130000;
 
     private Context context;
 
@@ -116,7 +117,9 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
 
     private LinearLayout button_box;
 
-    private boolean boolTestTimer = false;
+    private boolean boolTestTimer = true;
+
+    private boolean firstRun=true;
 
     @Override
     public void onScaleChange(float scale) {
@@ -427,14 +430,14 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                 sendMessage(chatMsg,"music");
                 if (boolTestTimer){
                     try{
-                        Thread.sleep(2000);
+                        Thread.sleep(30000);
+                        reset_room();
+                        TwoMinuteWarningSent=false;
+                        Thread.sleep(10000);
+                        start_room();
                     }catch (Exception e){}
-                    reset_room();
-                    start_room();
+
                 }
-                try{
-                    Thread.sleep(500);
-                }catch (Exception e){}
             }
         }.start();
     }
@@ -773,9 +776,13 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
             });
         }
 
-
-
-
+        @Override
+        public void onPeerStatusChanged(PnPeer peer) {
+            super.onPeerStatusChanged(peer);
+            if (peer.getStatus().equals("DISCONNECTED")){
+                dispatchCall(peer.getId());
+            }
+        }
 
         @Override
         public void onAddRemoteStream(final MediaStream remoteStream, final PnPeer peer) {
@@ -800,22 +807,25 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                             remoteStream1=remoteStream;
                             remoteStream1.videoTracks.get(0).addRenderer(videoRenderer1);
                             VideoRenderGuiWithZoom.update(remoteRender, 0, 0, 100, 100, VideoRenderGuiWithZoom.ScalingType.SCALE_ASPECT_BALANCED, false);
-                            reset_room();
-                            if (boolTestTimer){
-                                start_room();
-                                new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        while (1==1){
-                                            ChatMessage chatMsg = new ChatMessage(username, "Test Hint", System.currentTimeMillis());
-                                            sendMessage(chatMsg,"hint");
-                                            try{
-                                                Thread.sleep(60000);
-                                            }catch (Exception e){}
+                            if (firstRun){
+                                firstRun=false;
+                                reset_room();
+                                if (boolTestTimer){
+                                    start_room();
+                                    new Thread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            while (1==1){
+                                                ChatMessage chatMsg = new ChatMessage(username, "Test Hint", System.currentTimeMillis());
+                                                sendMessage(chatMsg,"hint");
+                                                try{
+                                                    Thread.sleep(60000);
+                                                }catch (Exception e){}
+                                            }
                                         }
-                                    }
-                                }).start();
+                                    }).start();
 
+                                }
                             }
                         }
                         catch (Exception e){
