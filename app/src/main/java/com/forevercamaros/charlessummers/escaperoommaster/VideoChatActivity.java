@@ -13,6 +13,8 @@ import android.media.MediaRecorder;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -120,6 +122,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
     private boolean boolTestTimer = true;
 
     private boolean firstRun=true;
+    private boolean camera1BatteryLevelShown = false,camera2BatteryLevelShown = false;
 
     @Override
     public void onScaleChange(float scale) {
@@ -733,6 +736,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
     }
 
 
+
     private void  sendMessage(ChatMessage chatMsg, String type){
         JSONObject messageJSON = new JSONObject();
         try {
@@ -777,9 +781,34 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
         }
 
         @Override
-        public void onPeerStatusChanged(PnPeer peer) {
+        public void onPeerStatusChanged(final PnPeer peer) {
             super.onPeerStatusChanged(peer);
             if (peer.getStatus().equals("DISCONNECTED")){
+                /*VideoChatActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                        builder.setMessage(peer.getId() + " DISCONNECTED! Will Attempt to reconnect")
+                                .setCancelable(false)
+                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        //do things
+                                    }
+                                });
+
+                        AlertDialog alert = builder.create();
+                        alert.show();
+                    }
+                });
+               VideoChatActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (peer.getId().equals("ESCAPE_ROOM_2")){
+                            remoteStream1.audioTracks.get(0).setEnabled(true);
+                        }
+
+                    }
+                });*/
                 dispatchCall(peer.getId());
             }
         }
@@ -793,7 +822,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                     Toast.makeText(VideoChatActivity.this,"Connected to " + peer.getId(), Toast.LENGTH_SHORT).show();
                     if (peer.getId().equals("ESCAPE_ROOM")){
                         try {
-                            if(remoteStream.videoTracks.size()==0) return;
+                            if(remoteStream.audioTracks.size()==0 || remoteStream.videoTracks.size()==0) return;
                             cam1Connected=true;
                             mCallStatus.setText("Start Timer");
                             TextView reset_room = (TextView)findViewById(R.id.reset_room);
@@ -847,6 +876,7 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                     if (cam2Connected && cam1Connected){
                         ImageButton btnSwitchCameras = (ImageButton)findViewById(R.id.btnSwitchCameras);
                         btnSwitchCameras.setVisibility(View.VISIBLE);
+                        remoteStream1.audioTracks.get(0).setEnabled(false);
                     }
 
                 }
@@ -863,6 +893,51 @@ public class VideoChatActivity extends Activity implements PinchZoomGLSurfaceVie
                 String msg  = jsonMsg.getString(Constants.JSON_MSG);
                 long   time = jsonMsg.getLong(Constants.JSON_TIME);
                 final ChatMessage chatMsg = new ChatMessage(uuid, msg, time);
+                if (msg.equals("bll")){
+                    if (uuid.equals("ESCAPE_ROOM")){
+                        if (camera1BatteryLevelShown==false){
+                            VideoChatActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                                    builder.setMessage("ESCAPE ROOM CAMERA 1 BATTERY LOW!")
+                                            .setCancelable(false)
+                                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                                public void onClick(DialogInterface dialog, int id) {
+                                                    //do things
+                                                }
+                                            });
+
+                                    AlertDialog alert = builder.create();
+                                    alert.show();
+                                }
+                            });
+                            camera1BatteryLevelShown=true;
+                        }
+                    }else {
+                        if (camera2BatteryLevelShown == false){
+                            VideoChatActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                                    builder.setMessage("ESCAPE ROOM CAMERA 2 BATTERY LOW!")
+                                            .setCancelable(false)
+                                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                                public void onClick(DialogInterface dialog, int id) {
+                                                    //do things
+                                                }
+                                            });
+
+                                    AlertDialog alert = builder.create();
+                                    alert.show();
+                                }
+                            });
+                            camera2BatteryLevelShown=true;
+                        }
+                    }
+
+                }
+
             } catch (JSONException e){
                 e.printStackTrace();
             }
